@@ -90,80 +90,187 @@ async function step(label, update) {
 
 function pause(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
-// ─── Flow ─────────────────────────────────────────────────────────────────────
-const CLIENTE     = 111111111;
-const NEGOCIO     = 3312345678;
-const REPARTIDOR  = 345211335;
+function header(title) {
+  console.log(`\n${COLORS.bold}── ${title} ${'─'.repeat(Math.max(0, 46 - title.length))}${COLORS.reset}`);
+}
+
+// ─── Constantes ───────────────────────────────────────────────────────────────
+const CLIENTE    = 111111111;
+const NEGOCIO    = 3312345678;
+const REPARTIDOR = 345211335;
 const LAT = -19.4326;
 const LNG = -99.1332;
 
-async function main() {
-  console.log(`\n${COLORS.bold}═══════════════════════════════════════════════`);
-  console.log('  SIMULACIÓN PEDIDO COMPLETO — Gestor de Colonia');
-  console.log(`═══════════════════════════════════════════════${COLORS.reset}\n`);
-
-  // Limpiar estado previo del cliente de prueba
+// ─── Setup / teardown ─────────────────────────────────────────────────────────
+async function resetCliente() {
   await db('conversations').where({ telegram_id: String(CLIENTE) }).delete();
-  const prevCustomer = await db('customers').where({ telegram_id: String(CLIENTE) }).first();
-  if (prevCustomer) {
-    await db('order_items').whereIn('order_id', db('orders').where({ customer_id: prevCustomer.id }).select('id')).delete();
-    await db('orders').where({ customer_id: prevCustomer.id }).delete();
-    await db('customers').where({ id: prevCustomer.id }).delete();
+  const prev = await db('customers').where({ telegram_id: String(CLIENTE) }).first();
+  if (prev) {
+    await db('order_items').whereIn('order_id', db('orders').where({ customer_id: prev.id }).select('id')).delete();
+    await db('orders').where({ customer_id: prev.id }).delete();
+    await db('customers').where({ id: prev.id }).delete();
   }
+}
 
-  // Asegurar que el repartidor esté disponible y con ubicación
+async function setupRepartidor() {
   await db('riders').where({ telegram_id: String(REPARTIDOR) })
     .update({ status: 'waiting', current_lat: LAT, current_lng: LNG });
   console.log(`${COLORS.dim}[setup] repartidor → waiting con ubicación ${LAT}, ${LNG}${COLORS.reset}`);
+}
 
-  // ── 1. Onboarding del cliente ─────────────────────────────────────────────
-  console.log(`\n${COLORS.bold}── FASE 1: Onboarding ──────────────────────────${COLORS.reset}`);
-  await step('/start', msg(CLIENTE, '/start'));
-  await step('nombre: Ana', msg(CLIENTE, 'Ana'));
-  await step('ubicación compartida', loc(CLIENTE, LAT, LNG));
-
-  // ── 2. Buscar negocio y armar carrito ─────────────────────────────────────
-  console.log(`\n${COLORS.bold}── FASE 2: Pedido ──────────────────────────────${COLORS.reset}`);
+// ─── Fase compartida: carrito ─────────────────────────────────────────────────
+async function faseCarrito() {
+  header('FASE 2: Carrito');
   await step('buscar "pollo"', msg(CLIENTE, 'pollo'));
   await step('seleccionar pollos el pollo', cb(CLIENTE, 'biz:1'));
   await step('agregar Pollo al carrito', cb(CLIENTE, 'item:1'));
   await step('ver carrito', cb(CLIENTE, 'view_cart'));
-  await step('confirmar pedido', cb(CLIENTE, 'confirm_order'));
-  await step('usar dirección guardada', cb(CLIENTE, 'use_saved_address'));
+}
 
-  // Recuperar orderId de la DB
-  const customer = await db('customers').where({ telegram_id: String(CLIENTE) }).first();
-  const order = await db('orders').where({ customer_id: customer.id }).orderBy('id', 'desc').first();
-  const orderId = order.id;
-  console.log(`\n${COLORS.dim}[info] Pedido creado: #${orderId}${COLORS.reset}`);
-
-  // ── 3. Cliente declara que pagó ───────────────────────────────────────────
-  console.log(`\n${COLORS.bold}── FASE 3: Pago ────────────────────────────────${COLORS.reset}`);
+// ─── Fase compartida: pago → entrega ─────────────────────────────────────────
+async function fasePagoYEntrega(orderId) {
+  header('FASE 4: Pago');
   await step('ya pagué', cb(CLIENTE, 'paid'));
 
-  // ── 4. Negocio confirma el pago ───────────────────────────────────────────
-  console.log(`\n${COLORS.bold}── FASE 4: Negocio confirma ────────────────────${COLORS.reset}`);
+  header('FASE 5: Negocio confirma');
   await step(`CONFIRMAR ${orderId}`, msg(NEGOCIO, `CONFIRMAR ${orderId}`));
 
-  // ── 5. Negocio marca listo → dispatcher asigna repartidor ─────────────────
-  console.log(`\n${COLORS.bold}── FASE 5: Pedido listo → asignación ───────────${COLORS.reset}`);
+  header('FASE 6: Pedido listo → asignación');
   await step(`LISTO ${orderId}`, msg(NEGOCIO, `LISTO ${orderId}`));
-  await pause(300); // dispatcher es async dentro de transition
+  await pause(300);
 
-  // ── 6. Repartidor acepta, recoge y entrega ────────────────────────────────
-  console.log(`\n${COLORS.bold}── FASE 6: Entrega ─────────────────────────────${COLORS.reset}`);
+  header('FASE 7: Entrega');
   await step(`aceptar pedido #${orderId}`, cb(REPARTIDOR, `accept_order:${orderId}`));
   await step('LLEGUE (al negocio)', msg(REPARTIDOR, 'LLEGUE'));
   await step(`RECOGER ${orderId}`, msg(REPARTIDOR, `RECOGER ${orderId}`));
   await step(`ENTREGAR ${orderId}`, msg(REPARTIDOR, `ENTREGAR ${orderId}`));
 
-  // ── Estado final ──────────────────────────────────────────────────────────
   const finalOrder = await db('orders').where({ id: orderId }).first();
-  console.log(`\n${COLORS.bold}═══════════════════════════════════════════════`);
-  console.log(`  Pedido #${orderId} — estado final: ${finalOrder?.status}`);
-  console.log(`═══════════════════════════════════════════════${COLORS.reset}\n`);
+  console.log(`\n${COLORS.dim}[resultado] Pedido #${orderId} — estado final: ${finalOrder?.status}${COLORS.reset}`);
+  return finalOrder?.status;
+}
+
+async function getLastOrderId() {
+  const customer = await db('customers').where({ telegram_id: String(CLIENTE) }).first();
+  const order = await db('orders').where({ customer_id: customer.id }).orderBy('id', 'desc').first();
+  console.log(`\n${COLORS.dim}[info] Pedido creado: #${order.id}${COLORS.reset}`);
+  return order.id;
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ESCENARIO A: Dirección guardada (lat/lng desde onboarding)
+// ═════════════════════════════════════════════════════════════════════════════
+async function escenarioA() {
+  console.log(`\n${COLORS.bold}${'═'.repeat(48)}`);
+  console.log('  ESCENARIO A: Dirección guardada (onboarding con GPS)');
+  console.log(`${'═'.repeat(48)}${COLORS.reset}`);
+
+  await resetCliente();
+  await setupRepartidor();
+
+  header('FASE 1: Onboarding con ubicación GPS');
+  await step('/start', msg(CLIENTE, '/start'));
+  await step('nombre: Ana', msg(CLIENTE, 'Ana'));
+  await step('comparte ubicación GPS', loc(CLIENTE, LAT, LNG));
+
+  await faseCarrito();
+
+  header('FASE 3: Dirección → usa la guardada');
+  await step('confirmar pedido', cb(CLIENTE, 'confirm_order'));
+  await step('usar dirección guardada', cb(CLIENTE, 'use_saved_address'));
+
+  const orderId = await getLastOrderId();
+  const status = await fasePagoYEntrega(orderId);
+
+  console.log(`\n${COLORS.bold}  Escenario A: ${status === 'delivered' ? '✅ OK' : '❌ FALLÓ — ' + status}${COLORS.reset}`);
+  return status === 'delivered';
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ESCENARIO B: Dirección nueva en el checkout, sin guardar
+// ═════════════════════════════════════════════════════════════════════════════
+async function escenarioB() {
+  console.log(`\n${COLORS.bold}${'═'.repeat(48)}`);
+  console.log('  ESCENARIO B: Dirección nueva en checkout — no guardar');
+  console.log(`${'═'.repeat(48)}${COLORS.reset}`);
+
+  await resetCliente();
+  await setupRepartidor();
+
+  // Onboarding con dirección de texto → cliente sin lat/lng
+  header('FASE 1: Onboarding con dirección de texto');
+  await step('/start', msg(CLIENTE, '/start'));
+  await step('nombre: Ana', msg(CLIENTE, 'Ana'));
+  await step('escribe dirección: "Calle Falsa 123"', msg(CLIENTE, 'Calle Falsa 123'));
+
+  await faseCarrito();
+
+  // Sin lat/lng → bot pide ubicación en el checkout
+  header('FASE 3: Dirección nueva en checkout');
+  await step('confirmar pedido', cb(CLIENTE, 'confirm_order'));
+  await step('comparte ubicación de entrega', loc(CLIENTE, LAT, LNG));
+  await step('no guardar como default', cb(CLIENTE, 'save_address_no'));
+
+  const orderId = await getLastOrderId();
+  const status = await fasePagoYEntrega(orderId);
+
+  console.log(`\n${COLORS.bold}  Escenario B: ${status === 'delivered' ? '✅ OK' : '❌ FALLÓ — ' + status}${COLORS.reset}`);
+  return status === 'delivered';
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ESCENARIO C: Dirección nueva en checkout, sí guardar
+// ═════════════════════════════════════════════════════════════════════════════
+async function escenarioC() {
+  console.log(`\n${COLORS.bold}${'═'.repeat(48)}`);
+  console.log('  ESCENARIO C: Dirección nueva en checkout — sí guardar');
+  console.log(`${'═'.repeat(48)}${COLORS.reset}`);
+
+  await resetCliente();
+  await setupRepartidor();
+
+  header('FASE 1: Onboarding con dirección de texto');
+  await step('/start', msg(CLIENTE, '/start'));
+  await step('nombre: Ana', msg(CLIENTE, 'Ana'));
+  await step('escribe dirección: "Calle Falsa 123"', msg(CLIENTE, 'Calle Falsa 123'));
+
+  await faseCarrito();
+
+  header('FASE 3: Dirección nueva en checkout — guardar como default');
+  await step('confirmar pedido', cb(CLIENTE, 'confirm_order'));
+  await step('comparte ubicación de entrega', loc(CLIENTE, LAT, LNG));
+  await step('guardar como dirección default', cb(CLIENTE, 'save_address_yes'));
+
+  const orderId = await getLastOrderId();
+
+  // Verificar que la dirección quedó guardada
+  const customer = await db('customers').where({ telegram_id: String(CLIENTE) }).first();
+  const guardada = customer.default_lat && customer.default_lng;
+  console.log(`\n${COLORS.dim}[check] dirección guardada en DB: ${guardada ? '✅ sí' : '❌ no'}${COLORS.reset}`);
+
+  const status = await fasePagoYEntrega(orderId);
+
+  console.log(`\n${COLORS.bold}  Escenario C: ${status === 'delivered' && guardada ? '✅ OK' : '❌ FALLÓ'}${COLORS.reset}`);
+  return status === 'delivered' && guardada;
+}
+
+// ─── Runner ───────────────────────────────────────────────────────────────────
+async function main() {
+  const results = {};
+  results.A = await escenarioA();
+  results.B = await escenarioB();
+  results.C = await escenarioC();
+
+  console.log(`\n${COLORS.bold}${'═'.repeat(48)}`);
+  console.log('  RESUMEN');
+  console.log(`${'═'.repeat(48)}${COLORS.reset}`);
+  for (const [k, ok] of Object.entries(results)) {
+    console.log(`  Escenario ${k}: ${ok ? `${COLORS.bold}\x1b[32m✅ PASS${COLORS.reset}` : `${COLORS.bold}\x1b[31m❌ FAIL${COLORS.reset}`}`);
+  }
+  console.log('');
 
   await db.destroy();
+  process.exit(Object.values(results).every(Boolean) ? 0 : 1);
 }
 
 main().catch((err) => { console.error(err); process.exit(1); });
