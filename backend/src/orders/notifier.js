@@ -1,6 +1,6 @@
 const ordersDb = require('../db/models/orders');
 const ridersDb = require('../db/models/riders');
-const sender = require('../telegram/sender');
+const sender = require('../sender');
 
 async function notify(orderId, status, orderData) {
   const order = orderData || (await ordersDb.findWithItems(orderId));

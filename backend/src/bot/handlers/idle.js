@@ -1,6 +1,6 @@
 const businesses = require('../../db/models/businesses');
 const conversations = require('../../db/models/conversations');
-const sender = require('../../telegram/sender');
+const sender = require('../../sender');
 
 const CATEGORIES = [
   { label: '🍕 Comida preparada', value: 'comida' },

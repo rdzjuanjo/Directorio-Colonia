@@ -1,7 +1,7 @@
 const menu = require('../../db/models/menu');
 const businesses = require('../../db/models/businesses');
 const conversations = require('../../db/models/conversations');
-const sender = require('../../telegram/sender');
+const sender = require('../../sender');
 
 async function handle({ chatId, text, callbackData, conv, customer }) {
   const ctx = conv.context_json || {};

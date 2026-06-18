@@ -1,13 +1,7 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 
-// Inyectar el sender de WhatsApp ANTES de que fsm.js lo cargue,
-// usando el mismo patrón de simulate.js / test-flow.js
-const waSender = require('./sender');
-const senderPath = require.resolve('../telegram/sender');
-require(senderPath);
-require.cache[senderPath].exports = waSender;
-
+const sender = require('../sender');
 const { handleUpdate } = require('../bot/fsm');
 const redis = require('../redis');
 
@@ -59,7 +53,7 @@ function startWhatsApp() {
     puppeteer: { args: ['--no-sandbox', '--disable-setuid-sandbox'] },
   });
 
-  waSender.setClient(client);
+  sender.setClient(client);
 
   client.on('qr', (qr) => {
     console.log('\n📱 Escaneá el QR con WhatsApp para conectar el bot:\n');
@@ -75,13 +69,11 @@ function startWhatsApp() {
   });
 
   client.on('message', async (msg) => {
-    // Ignorar mensajes de grupos y del propio bot
     if (msg.from.endsWith('@g.us')) return;
     if (msg.fromMe) return;
 
-    const chatId = msg.from; // formato: "521234567890@c.us"
+    const chatId = msg.from;
 
-    // Ubicación compartida
     if (msg.type === 'location' || msg.location) {
       await handleUpdate(buildLocation(chatId, msg.location.latitude, msg.location.longitude))
         .catch(console.error);
@@ -91,7 +83,6 @@ function startWhatsApp() {
     const text = (msg.body || '').trim();
     if (!text) return;
 
-    // Número → resolver contra mapa de botones activo
     if (/^\d+$/.test(text)) {
       const map = await getButtonMap(chatId);
       if (map) {
@@ -103,7 +94,6 @@ function startWhatsApp() {
       }
     }
 
-    // Texto libre → mensaje normal
     await handleUpdate(buildMessage(chatId, text)).catch(console.error);
   });
 

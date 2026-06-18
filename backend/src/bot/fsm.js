@@ -1,6 +1,6 @@
 const conversations = require('../db/models/conversations');
 const customers = require('../db/models/customers');
-const sender = require('../telegram/sender');
+const sender = require('../sender');
 
 const handlers = {
   idle: require('./handlers/idle'),

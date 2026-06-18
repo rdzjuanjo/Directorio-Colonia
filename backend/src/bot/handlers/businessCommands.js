@@ -1,5 +1,5 @@
 const orders = require('../../db/models/orders');
-const sender = require('../../telegram/sender');
+const sender = require('../../sender');
 const orderFsm = require('../../orders/state-machine');
 const disputes = require('../../db/models/disputes');
 

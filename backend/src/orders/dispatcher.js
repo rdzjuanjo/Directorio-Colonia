@@ -1,6 +1,6 @@
 const ridersDb = require('../db/models/riders');
 const ordersDb = require('../db/models/orders');
-const sender = require('../telegram/sender');
+const sender = require('../sender');
 
 async function findAndAssign(orderId, excludeRiderIds = []) {
   const order = await ordersDb.findWithItems(orderId);

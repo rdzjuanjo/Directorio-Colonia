@@ -7,8 +7,8 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "simulate": "node simulate.js",
-    "wa": "node server-whatsapp.js",
-    "wa:dev": "nodemon server-whatsapp.js",
+    "test:flow": "node test-flow.js",
+    "test:wa": "node test-flow-wa.js",
     "migrate": "knex migrate:latest --knexfile src/db/knexfile.js",
     "migrate:rollback": "knex migrate:rollback --knexfile src/db/knexfile.js",
     "seed": "knex seed:run --knexfile src/db/knexfile.js"

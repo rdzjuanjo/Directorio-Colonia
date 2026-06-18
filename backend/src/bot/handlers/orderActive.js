@@ -1,5 +1,5 @@
 const orders = require('../../db/models/orders');
-const sender = require('../../telegram/sender');
+const sender = require('../../sender');
 
 const STATUS_LABELS = {
   pending_payment: '⏳ Esperando pago',

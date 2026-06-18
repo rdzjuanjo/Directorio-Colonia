@@ -1,6 +1,6 @@
 const customers = require('../../db/models/customers');
 const conversations = require('../../db/models/conversations');
-const sender = require('../../telegram/sender');
+const sender = require('../../sender');
 const { placeOrder } = require('../../orders/state-machine');
 
 async function handle({ chatId, text, callbackData, location, conv, customer }) {

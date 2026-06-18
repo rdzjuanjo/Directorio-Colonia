@@ -76,7 +76,7 @@ const mockSender = {
 };
 
 // Inyectar mock ANTES de que cualquier otro módulo lo cargue
-const senderAbsPath = require.resolve('./src/telegram/sender');
+const senderAbsPath = require.resolve('./src/sender');
 require(senderAbsPath); // fuerza entrada en caché
 require.cache[senderAbsPath].exports = mockSender;
 

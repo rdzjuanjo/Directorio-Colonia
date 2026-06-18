@@ -61,7 +61,7 @@ const mockSender = {
   setWebhook:     async () => ({ ok: true }),
 };
 
-const senderPath = require.resolve('./src/telegram/sender');
+const senderPath = require.resolve('./src/sender');
 require(senderPath);
 require.cache[senderPath].exports = mockSender;
 

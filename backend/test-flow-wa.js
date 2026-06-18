@@ -86,8 +86,8 @@ const mockWaSender = {
   setWebhook:     async () => ({ ok: true }),
 };
 
-// Parchear telegram/sender (que es lo que usan todos los handlers internamente)
-const senderPath = require.resolve('./src/telegram/sender');
+// Parchear src/sender antes de que cualquier handler lo cargue
+const senderPath = require.resolve('./src/sender');
 require(senderPath);
 require.cache[senderPath].exports = mockWaSender;
 
