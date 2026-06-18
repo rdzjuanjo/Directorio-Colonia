@@ -7,6 +7,7 @@ const disputesDb = require('../db/models/disputes');
 const { verifyAdminToken, loginAdmin } = require('./auth');
 
 async function adminRoutes(fastify) {
+  // Ruta pública — sin autenticación
   fastify.post('/login', async (req, reply) => {
     const { email, password } = req.body;
     const token = await loginAdmin(fastify, email, password);
@@ -14,74 +15,77 @@ async function adminRoutes(fastify) {
     return { token };
   });
 
-  fastify.addHook('preHandler', verifyAdminToken);
+  // Todas las rutas siguientes requieren token de admin
+  fastify.register(async function protectedRoutes(f) {
+    f.addHook('preHandler', verifyAdminToken);
 
-  // Negocios
-  fastify.get('/businesses', async () => db('businesses').orderBy('name'));
-  fastify.post('/businesses', async (req, reply) => {
-    const { password, ...bizData } = req.body;
-    const biz = await businessesDb.create(bizData);
-    if (req.body.email && password) {
-      await db('business_users').insert({
-        business_id: biz.id, email: req.body.email,
-        password_hash: await bcrypt.hash(password, 10),
-      });
-    }
-    return biz;
-  });
-  fastify.put('/businesses/:id', async (req) => businessesDb.update(req.params.id, req.body));
-  fastify.delete('/businesses/:id', async (req) => businessesDb.delete(req.params.id));
-  fastify.post('/businesses/:id/ban', async (req) => businessesDb.update(req.params.id, { banned: true }));
-  fastify.post('/businesses/:id/unban', async (req) => businessesDb.update(req.params.id, { banned: false }));
+    // Negocios
+    f.get('/businesses', async () => db('businesses').orderBy('name'));
+    f.post('/businesses', async (req) => {
+      const { password, email, ...bizData } = req.body;
+      const biz = await businessesDb.create(bizData);
+      if (email && password) {
+        await db('business_users').insert({
+          business_id: biz.id, email,
+          password_hash: await bcrypt.hash(password, 10),
+        });
+      }
+      return biz;
+    });
+    f.put('/businesses/:id', async (req) => businessesDb.update(req.params.id, req.body));
+    f.delete('/businesses/:id', async (req) => businessesDb.delete(req.params.id));
+    f.post('/businesses/:id/ban', async (req) => businessesDb.update(req.params.id, { banned: true }));
+    f.post('/businesses/:id/unban', async (req) => businessesDb.update(req.params.id, { banned: false }));
 
-  // Repartidores
-  fastify.get('/riders', async () => ridersDb.getAll());
-  fastify.post('/riders', async (req) => ridersDb.create(req.body));
-  fastify.put('/riders/:id', async (req) => ridersDb.update(req.params.id, req.body));
-  fastify.post('/riders/:id/ban', async (req) => ridersDb.update(req.params.id, { banned: true }));
-  fastify.post('/riders/:id/assign/:orderId', async (req) => {
-    const { transition, assignRider } = require('../orders/state-machine');
-    await assignRider(parseInt(req.params.orderId), parseInt(req.params.id));
-    return { ok: true };
-  });
+    // Repartidores
+    f.get('/riders', async () => ridersDb.getAll());
+    f.post('/riders', async (req) => ridersDb.create(req.body));
+    f.put('/riders/:id', async (req) => ridersDb.update(req.params.id, req.body));
+    f.post('/riders/:id/ban', async (req) => ridersDb.update(req.params.id, { banned: true }));
+    f.post('/riders/:id/assign/:orderId', async (req) => {
+      const { assignRider } = require('../orders/state-machine');
+      await assignRider(parseInt(req.params.orderId), parseInt(req.params.id));
+      return { ok: true };
+    });
 
-  // Pedidos
-  fastify.get('/orders', async () => ordersDb.findActive());
-  fastify.get('/orders/all', async (req) => {
-    const { status, limit = 50 } = req.query;
-    return db('orders').modify((q) => { if (status) q.where({ status }); }).limit(limit).orderBy('created_at', 'desc');
-  });
-  fastify.get('/orders/:id', async (req) => ordersDb.findWithItems(req.params.id));
-  fastify.post('/orders/:id/status', async (req) => {
-    const { transition } = require('../orders/state-machine');
-    await transition(req.params.id, req.body.status);
-    return { ok: true };
-  });
+    // Pedidos
+    f.get('/orders', async () => ordersDb.findActive());
+    f.get('/orders/all', async (req) => {
+      const { status, limit = 50 } = req.query;
+      return db('orders').modify((q) => { if (status) q.where({ status }); }).limit(parseInt(limit)).orderBy('created_at', 'desc');
+    });
+    f.get('/orders/:id', async (req) => ordersDb.findWithItems(req.params.id));
+    f.post('/orders/:id/status', async (req) => {
+      const { transition } = require('../orders/state-machine');
+      await transition(req.params.id, req.body.status);
+      return { ok: true };
+    });
 
-  // Disputas
-  fastify.get('/disputes', async () => disputesDb.findAll());
-  fastify.post('/disputes/:id/resolve', async (req) => disputesDb.resolve(req.params.id));
+    // Disputas
+    f.get('/disputes', async () => disputesDb.findAll());
+    f.post('/disputes/:id/resolve', async (req) => disputesDb.resolve(req.params.id));
 
-  // Config
-  fastify.get('/config', async () => db('config').select('key', 'value'));
-  fastify.put('/config/:key', async (req) => {
-    await db('config').where({ key: req.params.key }).update({ value: req.body.value });
-    return { ok: true };
-  });
+    // Config
+    f.get('/config', async () => db('config').select('key', 'value'));
+    f.put('/config/:key', async (req) => {
+      await db('config').where({ key: req.params.key }).update({ value: req.body.value });
+      return { ok: true };
+    });
 
-  // Dashboard stats
-  fastify.get('/stats', async () => {
-    const today = new Date().toISOString().split('T')[0];
-    const [ordersToday, activeOrders, activeRiders] = await Promise.all([
-      db('orders').whereRaw('DATE(created_at) = ?', [today]).count('* as count').first(),
-      db('orders').whereNotIn('status', ['delivered', 'cancelled', 'disputed']).count('* as count').first(),
-      db('riders').where({ status: 'waiting', active: true }).count('* as count').first(),
-    ]);
-    return {
-      orders_today: parseInt(ordersToday.count),
-      active_orders: parseInt(activeOrders.count),
-      active_riders: parseInt(activeRiders.count),
-    };
+    // Dashboard stats
+    f.get('/stats', async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const [ordersToday, activeOrders, activeRiders] = await Promise.all([
+        db('orders').whereRaw('DATE(created_at) = ?', [today]).count('* as count').first(),
+        db('orders').whereNotIn('status', ['delivered', 'cancelled', 'disputed']).count('* as count').first(),
+        db('riders').where({ status: 'waiting', active: true }).count('* as count').first(),
+      ]);
+      return {
+        orders_today: parseInt(ordersToday.count),
+        active_orders: parseInt(activeOrders.count),
+        active_riders: parseInt(activeRiders.count),
+      };
+    });
   });
 }
 

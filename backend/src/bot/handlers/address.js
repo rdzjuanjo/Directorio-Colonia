@@ -9,6 +9,7 @@ async function handle({ chatId, text, callbackData, location, conv, customer }) 
 
   if (callbackData === 'confirm_order') {
     if (customer.default_lat && customer.default_lng) {
+      await conversations.set(chatId, 'confirm_address', cart, ctx);
       await sender.sendButtons(chatId,
         `📍 ¿Entregamos en <b>${customer.default_address_label || 'tu dirección guardada'}</b>?`,
         [
@@ -28,7 +29,7 @@ async function handle({ chatId, text, callbackData, location, conv, customer }) 
       address_lat: customer.default_lat,
       address_lng: customer.default_lng,
     });
-    await conversations.set(chatId, 'awaiting_payment', cart, ctx);
+    // placeOrder ya transiciona a awaiting_payment con orderId en el contexto
     return;
   }
 
@@ -71,7 +72,7 @@ async function finishWithLocation(chatId, cart, ctx) {
     address_lat: ctx.newLat,
     address_lng: ctx.newLng,
   });
-  await conversations.set(chatId, 'awaiting_payment', cart, ctx);
+  // placeOrder ya transiciona a awaiting_payment con orderId en el contexto
 }
 
 module.exports = { handle };

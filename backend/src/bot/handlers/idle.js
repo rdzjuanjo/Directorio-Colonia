@@ -12,12 +12,18 @@ const CATEGORIES = [
 ];
 
 async function handle({ chatId, text, callbackData, conv, customer }) {
+  // Delegar selección de negocio al handler de búsqueda
+  if (callbackData?.startsWith('biz:') || callbackData?.startsWith('biz_closed:')) {
+    const searchHandler = require('./search');
+    return searchHandler.handle({ chatId, text, callbackData, conv, customer });
+  }
+
   if (callbackData?.startsWith('cat:')) {
     const category = callbackData.replace('cat:', '');
     return showBusinessesByCategory(chatId, category, conv);
   }
 
-  if (text === '/categorias' || text === '/start') {
+  if (callbackData === 'show_categories' || text === '/categorias' || text === '/start') {
     await sender.sendList(chatId, '¿Qué tipo de negocio buscas?',
       CATEGORIES.map((c) => ({ label: c.label, data: `cat:${c.value}` })));
     return;

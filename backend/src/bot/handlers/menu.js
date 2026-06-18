@@ -68,6 +68,7 @@ async function handle({ chatId, text, callbackData, conv, customer }) {
   }
 
   if (callbackData === 'view_cart') {
+    await conversations.set(chatId, 'cart', cart, ctx);
     await showCart(chatId, cart, ctx);
     return;
   }

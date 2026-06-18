@@ -6,7 +6,7 @@ async function handle({ chatId, text, location, conv }) {
   const state = conv.state;
 
   if (state === 'onboarding_name') {
-    if (!text || text.trim().length < 2) {
+    if (!text || text.startsWith('/') || text.trim().length < 2) {
       await sender.sendText(chatId, '👋 Hola! Soy el bot de pedidos de la colonia.\n\n¿Cuál es tu nombre?');
       return;
     }

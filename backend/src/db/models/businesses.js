@@ -14,6 +14,8 @@ module.exports = {
     const hours = typeof business.hours_json === 'string'
       ? JSON.parse(business.hours_json)
       : business.hours_json;
+    // Sin horario configurado = siempre abierto
+    if (!hours || Object.keys(hours).length === 0) return true;
     const now = new Date();
     const day = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][now.getDay()];
     const schedule = hours[day];

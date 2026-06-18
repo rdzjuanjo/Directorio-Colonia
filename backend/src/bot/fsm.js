@@ -43,15 +43,12 @@ async function handleUpdate(update) {
   let conv = await conversations.get(chatId);
 
   if (!conv) {
-    if (!customer) {
-      conv = { state: 'onboarding_name', cart_json: [], context_json: {} };
-    } else {
-      conv = { state: 'idle', cart_json: [], context_json: {} };
-    }
+    const initialState = customer ? 'idle' : 'onboarding_name';
+    await conversations.set(chatId, initialState, [], {});
+    conv = { state: initialState, cart_json: [], context_json: {} };
   }
 
   // Repartidores y negocios tienen handlers especiales
-  const { riders } = require('../db/models/riders');
   const riderDb = require('../db/models/riders');
   const rider = await riderDb.findByTelegramId(chatId);
   if (rider) {
