@@ -196,6 +196,7 @@ async function main() {
   await step('escribe "1" → item:1', CLIENTE, await num(CLIENTE, 1));
   await step('escribe "1" → ver carrito', CLIENTE, await num(CLIENTE, 1));
   await step('escribe "1" → confirmar pedido', CLIENTE, await num(CLIENTE, 1));
+  await step('escribe "1" → envío a domicilio', CLIENTE, await num(CLIENTE, 1));
   await step('escribe "1" → usar dirección guardada', CLIENTE, await num(CLIENTE, 1));
 
   const customer = await db('customers').where({ telegram_id: String(CLIENTE) }).first();

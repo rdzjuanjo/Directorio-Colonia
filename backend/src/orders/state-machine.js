@@ -6,24 +6,32 @@ const disputesDb = require('../db/models/disputes');
 const notifier = require('./notifier');
 const dispatcher = require('./dispatcher');
 
-async function placeOrder(customerTelegramId, cart, businessId, addressData) {
+async function placeOrder(customerTelegramId, cart, businessId, addressData, options = {}) {
+  const { deliveryType = 'delivery', paymentMethod = 'transfer' } = options;
+  const isPickup = deliveryType === 'pickup';
+  const isAtStore = paymentMethod === 'at_store';
+
   const customer = await customersDb.findByTelegramId(customerTelegramId);
   const db = require('../db');
-  const deliveryFee = parseFloat(
+
+  const deliveryFee = isPickup ? 0 : parseFloat(
     await db('config').where({ key: 'delivery_fee' }).first().then((r) => r.value)
   );
 
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const total = subtotal + deliveryFee;
+  const initialStatus = isAtStore ? 'confirmed' : 'pending_payment';
 
   const order = await ordersDb.create({
     order: {
       customer_id: customer.id,
       business_id: businessId,
-      status: 'pending_payment',
+      status: initialStatus,
       subtotal,
       delivery_fee: deliveryFee,
       total,
+      delivery_type: deliveryType,
+      payment_method: paymentMethod,
       ...addressData,
     },
     items: cart.map((i) => ({
@@ -34,8 +42,13 @@ async function placeOrder(customerTelegramId, cart, businessId, addressData) {
     })),
   });
 
-  await conversationsDb.set(customerTelegramId, 'awaiting_payment', cart, { businessId, orderId: order.id });
-  await notifier.onOrderCreated(order.id);
+  if (isAtStore) {
+    await conversationsDb.set(customerTelegramId, 'order_active', cart, { businessId, orderId: order.id });
+    await notifier.onPickupAtStoreCreated(order.id);
+  } else {
+    await conversationsDb.set(customerTelegramId, 'awaiting_payment', cart, { businessId, orderId: order.id });
+    await notifier.onOrderCreated(order.id);
+  }
   return order;
 }
 
@@ -44,9 +57,13 @@ async function transition(orderId, newStatus, extra = {}) {
   if (!order) throw new Error(`Order ${orderId} not found`);
 
   await ordersDb.updateStatus(orderId, newStatus, extra);
-  await notifier.notify(orderId, newStatus, order);
 
-  if (newStatus === 'ready') {
+  const notifyStatus = (newStatus === 'ready' && order.delivery_type === 'pickup')
+    ? 'pickup_ready'
+    : newStatus;
+  await notifier.notify(orderId, notifyStatus, order);
+
+  if (newStatus === 'ready' && order.delivery_type !== 'pickup') {
     await dispatcher.findAndAssign(orderId);
   }
 }

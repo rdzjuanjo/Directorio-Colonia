@@ -12,6 +12,7 @@ const db = require('./db');
 const redisClient = require('./redis');
 const adminRoutes = require('./api/admin');
 const businessRoutes = require('./api/business');
+const catalogRoutes = require('./api/catalog');
 
 const app = Fastify({ logger: false });
 
@@ -29,6 +30,7 @@ async function bootstrap() {
 
   await app.register(adminRoutes, { prefix: '/api/admin' });
   await app.register(businessRoutes, { prefix: '/api/business' });
+  await app.register(catalogRoutes);
 
   app.get('/health', async () => ({ status: 'ok', provider: 'whatsapp' }));
 

@@ -39,6 +39,15 @@ async function notify(orderId, status, orderData) {
         `📦 Tu pedido #${orderId} está listo. Buscando repartidor...`);
       break;
 
+    case 'pickup_ready': {
+      const loc = order.business_address_text ? `\n📍 ${order.business_address_text}` : '';
+      await sender.sendText(order.customer_telegram_id,
+        `📦 Tu pedido #${orderId} está listo. ¡Podés venir a buscarlo!\n\n🏪 ${order.business_name}${loc}`);
+      await sender.sendText(order.business_telegram_id,
+        `✅ Pedido #${orderId} marcado como listo. Avisado al cliente para que venga a retirarlo.`);
+      break;
+    }
+
     case 'rider_assigned': {
       const rider = await ridersDb.findById(order.rider_id);
       await sender.sendText(order.customer_telegram_id,
@@ -76,6 +85,18 @@ async function notify(orderId, status, orderData) {
   }
 }
 
+async function onPickupAtStoreCreated(orderId) {
+  const order = await ordersDb.findWithItems(orderId);
+  const itemList = order.items.map((i) => `• ${i.item_name} x${i.quantity} — $${(i.unit_price * i.quantity).toFixed(2)}`).join('\n');
+  const loc = order.business_address_text ? `\n📍 ${order.business_address_text}` : '';
+  await sender.sendText(order.customer_telegram_id,
+    `✅ <b>Pedido #${orderId} confirmado!</b>\n\n${itemList}\n\nTotal: <b>$${parseFloat(order.total).toFixed(2)}</b>\n\n🏪 ${order.business_name}${loc}\n\nTe avisamos cuando esté listo para recoger.`);
+  await sender.sendButtons(order.business_telegram_id,
+    `🏪 <b>Nuevo pedido para retirar en tienda #${orderId}</b>\n\nCliente: ${order.customer_name}\n${itemList}\n\nTotal: $${parseFloat(order.total).toFixed(2)}\n\n💵 El cliente paga personalmente en tienda.`,
+    [[{ label: `✅ CONFIRMAR ${orderId}`, data: `confirm_payment:${orderId}` }]]
+  );
+}
+
 async function onOrderCreated(orderId) {
   const order = await ordersDb.findWithItems(orderId);
   const itemList = order.items.map((i) => `• ${i.item_name} x${i.quantity} — $${(i.unit_price * i.quantity).toFixed(2)}`).join('\n');
@@ -88,4 +109,4 @@ async function onOrderCreated(orderId) {
   );
 }
 
-module.exports = { notify, onOrderCreated };
+module.exports = { notify, onOrderCreated, onPickupAtStoreCreated };

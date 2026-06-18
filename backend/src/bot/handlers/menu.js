@@ -27,6 +27,9 @@ async function handle({ chatId, text, callbackData, conv, customer }) {
       cart.push({ id: item.id, name: item.name, price: parseFloat(item.price), qty: 1 });
     }
     await conversations.set(chatId, 'browsing_menu', cart, ctx);
+    if (item.photo_url && process.env.PUBLIC_URL) {
+      await sender.sendPhoto(chatId, `${process.env.PUBLIC_URL}${item.photo_url}`, `${item.name} — $${parseFloat(item.price).toFixed(2)}`);
+    }
     await sender.sendButtons(chatId,
       `✅ <b>${item.name}</b> agregado al carrito.\n\nTotal carrito: $${cartTotal(cart).toFixed(2)}`,
       [
@@ -45,7 +48,8 @@ async function handle({ chatId, text, callbackData, conv, customer }) {
       return;
     }
 
-    let menuText = `🏪 <b>${biz.name}</b>\n\n`;
+    const catalogUrl = process.env.PUBLIC_URL ? `${process.env.PUBLIC_URL}/catalog/${businessId}` : null;
+    let menuText = `🏪 <b>${biz.name}</b>${catalogUrl ? `\n📋 Catálogo: ${catalogUrl}` : ''}\n\n`;
     for (const cat of categories) {
       if (!cat.items.length) continue;
       menuText += `<b>${cat.name}</b>\n`;
