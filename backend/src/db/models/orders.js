@@ -1,0 +1,54 @@
+const db = require('../index');
+
+module.exports = {
+  findById: (id) =>
+    db('orders').where({ 'orders.id': id })
+      .join('customers', 'orders.customer_id', 'customers.id')
+      .join('businesses', 'orders.business_id', 'businesses.id')
+      .select('orders.*', 'customers.name as customer_name', 'customers.telegram_id as customer_telegram_id',
+        'businesses.name as business_name', 'businesses.telegram_id as business_telegram_id',
+        'businesses.clabe', 'businesses.bank_name', 'businesses.account_holder')
+      .first(),
+
+  findWithItems: async (id) => {
+    const order = await module.exports.findById(id);
+    if (!order) return null;
+    order.items = await db('order_items').where({ order_id: id });
+    return order;
+  },
+
+  findByCustomer: (customerId) =>
+    db('orders').where({ customer_id: customerId }).orderBy('created_at', 'desc'),
+
+  findByBusiness: (businessId, status = null) =>
+    db('orders').where({ business_id: businessId })
+      .modify((q) => { if (status) q.where({ status }); })
+      .orderBy('created_at', 'desc'),
+
+  findActive: () =>
+    db('orders').whereNotIn('status', ['delivered', 'cancelled', 'disputed'])
+      .orderBy('created_at', 'desc'),
+
+  create: async ({ order, items }) => {
+    return db.transaction(async (trx) => {
+      const [created] = await trx('orders').insert(order).returning('*');
+      if (items.length) {
+        await trx('order_items').insert(items.map((i) => ({ ...i, order_id: created.id })));
+      }
+      return created;
+    });
+  },
+
+  updateStatus: (id, status, extra = {}) =>
+    db('orders').where({ id }).update({ status, ...extra, updated_at: db.fn.now() }).returning('*').then((r) => r[0]),
+
+  updateItems: async (id, items) => {
+    const subtotal = items.reduce((s, i) => s + i.unit_price * i.quantity, 0);
+    return db.transaction(async (trx) => {
+      await trx('order_items').where({ order_id: id }).delete();
+      await trx('order_items').insert(items.map((i) => ({ ...i, order_id: id })));
+      const deliveryFee = await db('config').where({ key: 'delivery_fee' }).first().then((r) => parseFloat(r.value));
+      await trx('orders').where({ id }).update({ subtotal, total: subtotal + deliveryFee, updated_at: db.fn.now() });
+    });
+  },
+};
