@@ -5,6 +5,7 @@ import ActiveOrders from './pages/ActiveOrders.jsx';
 import Menu from './pages/Menu.jsx';
 import Hours from './pages/Hours.jsx';
 import History from './pages/History.jsx';
+import Analytics from './pages/Analytics.jsx';
 
 function isAuth() { return !!localStorage.getItem('biz_token'); }
 
@@ -19,6 +20,7 @@ function Layout({ children }) {
         <NavLink to="/menu" className={navClass}>📋 Menú</NavLink>
         <NavLink to="/hours" className={navClass}>🕐 Horarios</NavLink>
         <NavLink to="/history" className={navClass}>📜 Historial</NavLink>
+        <NavLink to="/analytics" className={navClass}>📈 Analíticas</NavLink>
         <button className="mt-auto text-left px-4 py-2 rounded hover:bg-orange-700"
           onClick={() => { localStorage.removeItem('biz_token'); window.location.href = '/login'; }}>
           🚪 Salir
@@ -41,6 +43,7 @@ export default function App() {
       <Route path="/menu" element={<Protected><Menu /></Protected>} />
       <Route path="/hours" element={<Protected><Hours /></Protected>} />
       <Route path="/history" element={<Protected><History /></Protected>} />
+      <Route path="/analytics" element={<Protected><Analytics /></Protected>} />
       <Route path="*" element={<Navigate to={isAuth() ? '/orders' : '/login'} />} />
     </Routes>
   );

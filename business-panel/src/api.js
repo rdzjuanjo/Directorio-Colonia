@@ -31,4 +31,5 @@ export const api = {
   confirmPayment: (id) => req('POST', `/orders/${id}/confirm-payment`),
   markReady: (id) => req('POST', `/orders/${id}/ready`),
   updateOrderItems: (id, items) => req('PUT', `/orders/${id}/items`, { items }),
+  analytics: (from, to) => req('GET', `/analytics?from=${from}&to=${to}`),
 };

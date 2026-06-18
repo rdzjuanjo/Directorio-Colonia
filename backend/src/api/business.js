@@ -69,6 +69,43 @@ async function businessRoutes(fastify) {
       return { ok: true };
     });
 
+    // Analíticas
+    f.get('/analytics', async (req, reply) => {
+      const { from, to } = req.query;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+        return reply.code(400).send({ error: 'from y to deben tener formato YYYY-MM-DD' });
+      }
+      const id = bizId(req);
+      const [byDay, products] = await Promise.all([
+        db.raw(
+          `SELECT DATE(created_at)::text AS date, COUNT(*)::int AS orders, SUM(total)::float AS revenue
+           FROM orders WHERE created_at::date BETWEEN ? AND ? AND status = 'delivered' AND business_id = ?
+           GROUP BY DATE(created_at) ORDER BY date ASC`,
+          [from, to, id],
+        ),
+        db.raw(
+          `SELECT oi.item_name AS name, SUM(oi.quantity)::int AS qty,
+                  SUM(oi.quantity * oi.unit_price)::float AS revenue
+           FROM order_items oi JOIN orders o ON o.id = oi.order_id
+           WHERE o.created_at::date BETWEEN ? AND ? AND o.status = 'delivered' AND o.business_id = ?
+           GROUP BY oi.item_name ORDER BY qty DESC LIMIT 3`,
+          [from, to, id],
+        ),
+      ]);
+      const days = byDay.rows;
+      const totalOrders = days.reduce((s, d) => s + d.orders, 0);
+      const totalRevenue = days.reduce((s, d) => s + (d.revenue || 0), 0);
+      return {
+        ordersByDay: days,
+        topProducts: products.rows,
+        totals: {
+          orders: totalOrders,
+          revenue: parseFloat(totalRevenue.toFixed(2)),
+          avg_ticket: totalOrders ? parseFloat((totalRevenue / totalOrders).toFixed(2)) : 0,
+        },
+      };
+    });
+
     f.put('/orders/:id/items', async (req) => {
       const { transition } = require('../orders/state-machine');
       await ordersDb.updateItems(req.params.id, req.body.items);

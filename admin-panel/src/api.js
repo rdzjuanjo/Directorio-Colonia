@@ -43,4 +43,5 @@ export const api = {
   resolveDispute: (id) => req('POST', `/disputes/${id}/resolve`),
   config: () => req('GET', '/config'),
   updateConfig: (key, value) => req('PUT', `/config/${key}`, { value }),
+  analytics: (from, to) => req('GET', `/analytics?from=${from}&to=${to}`),
 };
