@@ -79,8 +79,13 @@ async function notify(orderId, status, orderData) {
 async function onOrderCreated(orderId) {
   const order = await ordersDb.findWithItems(orderId);
   const itemList = order.items.map((i) => `• ${i.item_name} x${i.quantity} — $${(i.unit_price * i.quantity).toFixed(2)}`).join('\n');
-  await sender.sendText(order.customer_telegram_id,
-    `🛒 <b>Pedido #${orderId} creado!</b>\n\n${itemList}\n\nTotal: <b>$${parseFloat(order.total).toFixed(2)}</b>\n\nAhora realiza la transferencia bancaria.`);
+  await sender.sendButtons(
+    order.customer_telegram_id,
+    `🛒 <b>Pedido #${orderId} creado!</b>\n\n${itemList}\n\nTotal: <b>$${parseFloat(order.total).toFixed(2)}</b>\n\n` +
+    `💳 Banco: <b>${order.bank_name}</b>\nCLABE: <code>${order.clabe}</code>\nTitular: <b>${order.account_holder}</b>\nReferencia: <b>#${orderId}</b>\n\n` +
+    `Transferí el monto exacto y avisá cuando esté listo.`,
+    [{ label: '✅ Ya pagué', data: 'paid' }]
+  );
 }
 
 module.exports = { notify, onOrderCreated };
