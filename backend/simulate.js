@@ -3,13 +3,13 @@ const readline = require('readline');
 const path = require('path');
 
 // ─── Personas de prueba ───────────────────────────────────────────────────────
-// negocio y repartidor usan los telegram_ids reales de la DB para que las
-// notificaciones del notifier (que envía a business_telegram_id / rider.telegram_id)
+// negocio y repartidor usan los whatsapp_ids reales de la DB para que las
+// notificaciones del notifier (que envía a business_whatsapp_id / rider.whatsapp_id)
 // aparezcan correctamente en el simulador.
 const PERSONAS = {
   cliente:     111111111,   // nuevo usuario — pasará por onboarding
-  negocio:     3312345678,  // pollos el pollo (businesses.telegram_id)
-  repartidor:  345211335,   // repartilio    (riders.telegram_id)
+  negocio:     3312345678,  // pollos el pollo (businesses.whatsapp_id)
+  repartidor:  345211335,   // repartilio    (riders.whatsapp_id)
 };
 
 // ─── Mock de sender — intercepta mensajes del bot ────────────────────────────

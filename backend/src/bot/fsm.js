@@ -35,7 +35,7 @@ async function handleUpdate(update) {
     return;
   }
 
-  const customer = await customers.findByTelegramId(chatId);
+  const customer = await customers.findByWhatsappId(chatId);
 
   if (customer?.banned) {
     await sender.sendText(chatId, 'Tu cuenta ha sido suspendida. Contacta al administrador.');
@@ -52,14 +52,14 @@ async function handleUpdate(update) {
 
   // Repartidores y negocios tienen handlers especiales
   const riderDb = require('../db/models/riders');
-  const rider = await riderDb.findByTelegramId(chatId);
+  const rider = await riderDb.findByWhatsappId(chatId);
   if (rider) {
     await handlers.rider_commands.handle({ chatId, text, callbackData, conv, rider });
     return;
   }
 
   const businessUsersDb = require('../db/models/businessUsers');
-  const businessUser = await businessUsersDb.findByTelegramId(chatId);
+  const businessUser = await businessUsersDb.findByWhatsappId(chatId);
   if (businessUser) {
     await handlers.business_commands.handle({ chatId, text, callbackData, conv, businessUser });
     return;

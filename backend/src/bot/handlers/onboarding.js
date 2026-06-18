@@ -20,7 +20,7 @@ async function handle({ chatId, text, location, conv }) {
 
     if (location) {
       await customers.create({
-        telegram_id: String(chatId),
+        whatsapp_id: String(chatId),
         name,
         default_lat: location.latitude,
         default_lng: location.longitude,
@@ -32,7 +32,7 @@ async function handle({ chatId, text, location, conv }) {
     }
 
     if (text) {
-      await customers.create({ telegram_id: String(chatId), name, default_address_label: text.trim() });
+      await customers.create({ whatsapp_id: String(chatId), name, default_address_label: text.trim() });
       await conversations.set(chatId, 'idle', [], {});
       await sender.removeKeyboard(chatId, `✅ Listo, <b>${name}</b>! Dirección guardada como: <i>${text.trim()}</i>\n\nEscribe qué buscas o usa /categorias.`);
       return;

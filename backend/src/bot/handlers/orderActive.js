@@ -46,7 +46,7 @@ async function handle({ chatId, text, callbackData, conv }) {
     const loc = biz?.address_text ? `\n📍 ${biz.address_text}` : '';
     await sender.sendText(chatId,
       `✅ Pedido #${orderId} cambiado a retiro en tienda.\n\n🏪 ${biz?.name || 'El negocio'}${loc}\n\nTe avisamos cuando esté listo para recoger.`);
-    await sender.sendText(order.business_telegram_id,
+    await sender.sendText(order.business_whatsapp_id,
       `🏪 Pedido #${orderId} ahora es retiro en tienda (sin repartidor). Cliente irá a buscarlo.`);
     return;
   }

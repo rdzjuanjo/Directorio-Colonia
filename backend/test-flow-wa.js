@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 // ─── Personas ─────────────────────────────────────────────────────────────────
-// negocio y repartidor usan los telegram_ids reales de la DB
+// negocio y repartidor usan los whatsapp_ids reales de la DB
 const PERSONAS = {
   '521111111111@c.us': 'cliente',
   '3312345678':        'negocio',
@@ -162,15 +162,15 @@ const LNG = -99.1332;
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
 async function reset() {
-  await db('conversations').where({ telegram_id: String(CLIENTE) }).delete();
-  const prev = await db('customers').where({ telegram_id: String(CLIENTE) }).first();
+  await db('conversations').where({ whatsapp_id: String(CLIENTE) }).delete();
+  const prev = await db('customers').where({ whatsapp_id: String(CLIENTE) }).first();
   if (prev) {
     await db('order_items').whereIn('order_id', db('orders').where({ customer_id: prev.id }).select('id')).delete();
     await db('orders').where({ customer_id: prev.id }).delete();
     await db('customers').where({ id: prev.id }).delete();
   }
   await redis.del(`wa:bmap:${CLIENTE}`);
-  await db('riders').where({ telegram_id: String(REPARTIDOR) })
+  await db('riders').where({ whatsapp_id: String(REPARTIDOR) })
     .update({ status: 'waiting', current_lat: LAT, current_lng: LNG });
   console.log(`${COLORS.dim}[setup] DB y Redis limpios. Repartidor → waiting.${COLORS.reset}`);
 }
@@ -199,7 +199,7 @@ async function main() {
   await step('escribe "1" → envío a domicilio', CLIENTE, await num(CLIENTE, 1));
   await step('escribe "1" → usar dirección guardada', CLIENTE, await num(CLIENTE, 1));
 
-  const customer = await db('customers').where({ telegram_id: String(CLIENTE) }).first();
+  const customer = await db('customers').where({ whatsapp_id: String(CLIENTE) }).first();
   const order = await db('orders').where({ customer_id: customer.id }).orderBy('id', 'desc').first();
   const orderId = order.id;
   console.log(`\n${COLORS.dim}[info] Pedido creado: #${orderId}${COLORS.reset}`);

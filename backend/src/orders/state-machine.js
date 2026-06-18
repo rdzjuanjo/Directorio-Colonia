@@ -6,12 +6,12 @@ const disputesDb = require('../db/models/disputes');
 const notifier = require('./notifier');
 const dispatcher = require('./dispatcher');
 
-async function placeOrder(customerTelegramId, cart, businessId, addressData, options = {}) {
+async function placeOrder(customerWhatsappId, cart, businessId, addressData, options = {}) {
   const { deliveryType = 'delivery', paymentMethod = 'transfer' } = options;
   const isPickup = deliveryType === 'pickup';
   const isAtStore = paymentMethod === 'at_store';
 
-  const customer = await customersDb.findByTelegramId(customerTelegramId);
+  const customer = await customersDb.findByWhatsappId(customerWhatsappId);
   const db = require('../db');
 
   const deliveryFee = isPickup ? 0 : parseFloat(
@@ -43,10 +43,10 @@ async function placeOrder(customerTelegramId, cart, businessId, addressData, opt
   });
 
   if (isAtStore) {
-    await conversationsDb.set(customerTelegramId, 'order_active', cart, { businessId, orderId: order.id });
+    await conversationsDb.set(customerWhatsappId, 'order_active', cart, { businessId, orderId: order.id });
     await notifier.onPickupAtStoreCreated(order.id);
   } else {
-    await conversationsDb.set(customerTelegramId, 'awaiting_payment', cart, { businessId, orderId: order.id });
+    await conversationsDb.set(customerWhatsappId, 'awaiting_payment', cart, { businessId, orderId: order.id });
     await notifier.onOrderCreated(order.id);
   }
   return order;

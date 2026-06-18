@@ -32,7 +32,7 @@ async function findAndAssign(orderId, excludeRiderIds = []) {
 async function handleNoRiders(order, orderId) {
   // Notificar al admin si está configurado
   const db = require('../db');
-  const adminCfg = await db('config').where({ key: 'admin_telegram_id' }).first();
+  const adminCfg = await db('config').where({ key: 'admin_whatsapp_id' }).first();
   if (adminCfg?.value) {
     await sender.sendText(adminCfg.value,
       `⚠️ Sin repartidores para pedido #${orderId} (${order.business_name} → ${order.address_text}). Asigna uno manualmente desde el panel.`);
@@ -42,14 +42,14 @@ async function handleNoRiders(order, orderId) {
   const biz = await businessesDb.findById(order.business_id);
   if (biz?.accepts_pickup) {
     const loc = biz.address_text ? `\n📍 ${biz.address_text}` : '';
-    await sender.sendButtons(order.customer_telegram_id,
+    await sender.sendButtons(order.customer_whatsapp_id,
       `⚠️ No hay repartidores disponibles ahora para el pedido #${orderId}.\n\n¿Qué querés hacer?`,
       [
         { label: '🏪 Cambiar a retiro en tienda', data: 'switch_to_pickup' },
         { label: '⏳ Seguir esperando', data: 'keep_waiting' },
       ]);
   } else {
-    await sender.sendText(order.customer_telegram_id,
+    await sender.sendText(order.customer_whatsapp_id,
       `⚠️ No hay repartidores disponibles ahora. El admin buscará uno manualmente.`);
   }
 }

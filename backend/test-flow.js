@@ -103,8 +103,8 @@ const LNG = -99.1332;
 
 // ─── Setup / teardown ─────────────────────────────────────────────────────────
 async function resetCliente() {
-  await db('conversations').where({ telegram_id: String(CLIENTE) }).delete();
-  const prev = await db('customers').where({ telegram_id: String(CLIENTE) }).first();
+  await db('conversations').where({ whatsapp_id: String(CLIENTE) }).delete();
+  const prev = await db('customers').where({ whatsapp_id: String(CLIENTE) }).first();
   if (prev) {
     await db('order_items').whereIn('order_id', db('orders').where({ customer_id: prev.id }).select('id')).delete();
     await db('orders').where({ customer_id: prev.id }).delete();
@@ -113,7 +113,7 @@ async function resetCliente() {
 }
 
 async function setupRepartidor() {
-  await db('riders').where({ telegram_id: String(REPARTIDOR) })
+  await db('riders').where({ whatsapp_id: String(REPARTIDOR) })
     .update({ status: 'waiting', current_lat: LAT, current_lng: LNG });
   console.log(`${COLORS.dim}[setup] repartidor → waiting con ubicación ${LAT}, ${LNG}${COLORS.reset}`);
 }
@@ -151,7 +151,7 @@ async function fasePagoYEntrega(orderId) {
 }
 
 async function getLastOrderId() {
-  const customer = await db('customers').where({ telegram_id: String(CLIENTE) }).first();
+  const customer = await db('customers').where({ whatsapp_id: String(CLIENTE) }).first();
   const order = await db('orders').where({ customer_id: customer.id }).orderBy('id', 'desc').first();
   console.log(`\n${COLORS.dim}[info] Pedido creado: #${order.id}${COLORS.reset}`);
   return order.id;
@@ -244,7 +244,7 @@ async function escenarioC() {
   const orderId = await getLastOrderId();
 
   // Verificar que la dirección quedó guardada
-  const customer = await db('customers').where({ telegram_id: String(CLIENTE) }).first();
+  const customer = await db('customers').where({ whatsapp_id: String(CLIENTE) }).first();
   const guardada = customer.default_lat && customer.default_lng;
   console.log(`\n${COLORS.dim}[check] dirección guardada en DB: ${guardada ? '✅ sí' : '❌ no'}${COLORS.reset}`);
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api.js';
 
-const empty = { name:'', category:'comida', description:'', clabe:'', bank_name:'', account_holder:'', telegram_id:'', email:'', password:'' };
+const empty = { name:'', category:'comida', description:'', clabe:'', bank_name:'', account_holder:'', whatsapp_id:'', email:'', password:'' };
 
 export default function Businesses() {
   const [list, setList] = useState([]);
@@ -70,7 +70,7 @@ export default function Businesses() {
             {field('clabe', 'CLABE (18 dígitos)')}
             {field('bank_name', 'Banco')}
             {field('account_holder', 'Titular de la cuenta')}
-            {field('telegram_id', 'Telegram ID del negocio')}
+            {field('whatsapp_id', 'WhatsApp del negocio (ej: 521234567890@c.us)')}
             {!form.id && field('email', 'Email de acceso al panel')}
             {!form.id && field('password', 'Contraseña del panel', 'password')}
             <div className="flex gap-2 pt-2">

@@ -1,10 +1,10 @@
 const db = require('../index');
 
 module.exports = {
-  findByTelegramId: (telegramId) =>
+  findByWhatsappId: (whatsappId) =>
     db('business_users')
       .join('businesses', 'business_users.business_id', 'businesses.id')
-      .where('businesses.telegram_id', String(telegramId))
+      .where('businesses.whatsapp_id', String(whatsappId))
       .select('business_users.*', 'businesses.name as business_name', 'businesses.id as business_id',
         'businesses.clabe', 'businesses.bank_name', 'businesses.account_holder')
       .first(),

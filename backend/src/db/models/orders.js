@@ -5,8 +5,8 @@ module.exports = {
     db('orders').where({ 'orders.id': id })
       .join('customers', 'orders.customer_id', 'customers.id')
       .join('businesses', 'orders.business_id', 'businesses.id')
-      .select('orders.*', 'customers.name as customer_name', 'customers.telegram_id as customer_telegram_id',
-        'businesses.name as business_name', 'businesses.telegram_id as business_telegram_id',
+      .select('orders.*', 'customers.name as customer_name', 'customers.whatsapp_id as customer_whatsapp_id',
+        'businesses.name as business_name', 'businesses.whatsapp_id as business_whatsapp_id',
         'businesses.clabe', 'businesses.bank_name', 'businesses.account_holder',
         'businesses.address_text as business_address_text')
       .first(),

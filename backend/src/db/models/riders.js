@@ -13,8 +13,8 @@ function haversineKm(lat1, lng1, lat2, lng2) {
 }
 
 module.exports = {
-  findByTelegramId: (telegramId) =>
-    db(TABLE).where({ telegram_id: String(telegramId) }).first(),
+  findByWhatsappId: (whatsappId) =>
+    db(TABLE).where({ whatsapp_id: String(whatsappId) }).first(),
 
   findById: (id) => db(TABLE).where({ id }).first(),
 
@@ -30,12 +30,12 @@ module.exports = {
       .sort((a, b) => a.distance - b.distance)[0] || null;
   },
 
-  updateLocation: (telegramId, lat, lng) =>
-    db(TABLE).where({ telegram_id: String(telegramId) })
+  updateLocation: (whatsappId, lat, lng) =>
+    db(TABLE).where({ whatsapp_id: String(whatsappId) })
       .update({ current_lat: lat, current_lng: lng, last_seen: db.fn.now() }),
 
-  updateStatus: (telegramId, status) =>
-    db(TABLE).where({ telegram_id: String(telegramId) }).update({ status }),
+  updateStatus: (whatsappId, status) =>
+    db(TABLE).where({ whatsapp_id: String(whatsappId) }).update({ status }),
 
   updateStatusById: (id, status) =>
     db(TABLE).where({ id }).update({ status }),
