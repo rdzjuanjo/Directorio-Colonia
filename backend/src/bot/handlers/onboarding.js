@@ -10,8 +10,21 @@ async function handle({ chatId, text, location, conv }) {
       await sender.sendText(chatId, '👋 Hola! Soy el bot de pedidos de la colonia.\n\n¿Cuál es tu nombre?');
       return;
     }
-    await conversations.set(chatId, 'onboarding_location', [], { name: text.trim() });
-    await sender.requestLocation(chatId, `Mucho gusto, <b>${text.trim()}</b>! 📍\n\nComparteme tu ubicación para saber dónde entregar tus pedidos.`);
+    const name = text.trim();
+
+    // ── MODO CATÁLOGO: saltar ubicación ───────────────────────────────────
+    if (process.env.BOT_MODE === 'catalog') {
+      await customers.create({ whatsapp_id: String(chatId), name });
+      await conversations.set(chatId, 'catalog_search', [], {});
+      return require('./catalogSearch').handle({
+        chatId, text: null, callbackData: null, location: null,
+        conv: { state: 'catalog_search', cart_json: [], context_json: {} },
+        customer: { name },
+      });
+    }
+
+    await conversations.set(chatId, 'onboarding_location', [], { name });
+    await sender.requestLocation(chatId, `Mucho gusto, <b>${name}</b>! 📍\n\nComparteme tu ubicación para saber dónde entregar tus pedidos.`);
     return;
   }
 

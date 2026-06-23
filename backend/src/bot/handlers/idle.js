@@ -11,7 +11,17 @@ const CATEGORIES = [
   { label: '🏪 Miscelánea', value: 'miscelanea' },
 ];
 
-async function handle({ chatId, text, callbackData, conv, customer }) {
+async function handle({ chatId, text, callbackData, location, conv, customer }) {
+  // ── MODO CATÁLOGO: redirigir al handler de catálogo ───────────────────
+  if (process.env.BOT_MODE === 'catalog') {
+    await conversations.set(chatId, 'catalog_search', [], {});
+    return require('./catalogSearch').handle({
+      chatId, text, callbackData, location,
+      conv: { ...conv, state: 'catalog_search', context_json: {} },
+      customer,
+    });
+  }
+
   // Delegar selección de negocio al handler de búsqueda
   if (callbackData?.startsWith('biz:') || callbackData?.startsWith('biz_closed:')) {
     const searchHandler = require('./search');

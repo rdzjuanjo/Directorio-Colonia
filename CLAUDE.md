@@ -12,7 +12,7 @@ A neighborhood food-delivery platform for a closed community ("colonia"). Custom
 backend/        Node.js (CommonJS) — Fastify API + WhatsApp bot
 admin-panel/    React 19 + Vite + Tailwind 4 — runs on :5173
 business-panel/ React 19 + Vite + Tailwind 4 — runs on :5174
-mosquitto/      MQTT broker config (for future IoT/tracking use)
+mosquitto/      MQTT broker config (reserved for future IoT/tracking)
 docker-compose.yml  PostgreSQL 16, Redis 7, Mosquitto 2
 ```
 
@@ -26,13 +26,12 @@ docker compose up -d
 ### Backend
 ```bash
 cd backend
-npm run dev           # nodemon watch
-npm run migrate       # knex migrate:latest
+npm run dev              # nodemon watch
+npm run migrate          # knex migrate:latest
 npm run migrate:rollback
-npm run seed          # seeds admin user
-npm run test:flow     # simulate a full order flow (no WhatsApp needed)
-npm run test:wa       # WhatsApp-specific flow test
-npm run simulate      # interactive local bot simulator
+npm run seed             # idempotent: admin user + all config defaults
+npm run test:wa          # simulate a full order flow end-to-end (no WhatsApp needed)
+npm run simulate         # interactive local bot simulator
 ```
 
 ### Frontends
@@ -41,17 +40,32 @@ cd admin-panel && npm run dev    # :5173
 cd business-panel && npm run dev # :5174
 ```
 
+## WhatsApp session
+
+The bot uses `whatsapp-web.js` (Puppeteer-based). On first run it prints a QR code in the terminal — scan it once with the business WhatsApp account. The session is persisted to `backend/.wwebjs_auth/` (gitignored). `npm run simulate` runs a local text-only simulator that never touches WhatsApp.
+
+## Frontend pages
+
+**Admin panel** (`:5173`): Dashboard, Orders, Businesses, Riders, Disputes, Analytics, Zone.
+- `Zone.jsx` — Leaflet map editor for drawing the delivery polygon; saves as JSON to `config.delivery_zone`.
+- `recharts` is used for all charts (Analytics page).
+- Business form includes an interactive Leaflet map picker (`LocationPicker.jsx`) and SVG icon picker (`IconPicker.jsx`). Icons are served from `GET /icons` (backend registry at `src/utils/businessIcons.js`, 25 icons).
+
+**Business panel** (`:5174`): ActiveOrders, Menu, Hours, History, Analytics.
+- `Hours.jsx` — per-day open/close schedule stored in `businesses.hours_json`.
+- `Menu.jsx` — manages categories and items; photo uploads go to `backend/uploads/` and are served at `/uploads/`.
+
 ## Backend architecture
 
 ### WhatsApp → FSM pipeline
 
-`whatsapp/listener.js` receives raw WhatsApp messages, translates them into Telegram-shaped update objects (the FSM was originally built for Telegram), and calls `bot/fsm.js handleUpdate()`.
+`whatsapp/listener.js` receives raw WhatsApp messages, normalises them into Telegram-shaped update objects (the FSM was originally built for Telegram), and calls `bot/fsm.js handleUpdate()`.
 
 **Button simulation** — WhatsApp has no native buttons. `whatsapp/sender.js` sends numbered lists and stores the callback-data array in Redis under `wa:bmap:{chatId}` (30-min TTL). When the user replies with a digit, the listener resolves it back to the original callback data before routing through the FSM.
 
 ### Conversation FSM (`bot/fsm.js`)
 
-Each WhatsApp chat has a persistent conversation row in PostgreSQL (`conversations` table, keyed by `telegram_id` — the column is a legacy name; it now holds WhatsApp IDs like `521234567890@c.us`). The `state` column drives routing to one of these handlers:
+Each WhatsApp chat has a persistent row in the `conversations` table (keyed by `whatsapp_id`). The `state` column drives routing:
 
 | State | Handler |
 |---|---|
@@ -60,27 +74,50 @@ Each WhatsApp chat has a persistent conversation row in PostgreSQL (`conversatio
 | `searching`, `selecting_business` | `handlers/search` |
 | `browsing_menu` | `handlers/menu` |
 | `cart` | `handlers/cart` |
+| `confirm_delivery_type` | `handlers/cart` — delivery vs. pickup choice |
 | `confirm_address` | `handlers/address` |
+| `confirm_pickup` | `handlers/pickup` |
 | `awaiting_payment` | `handlers/payment` |
 | `order_active` | `handlers/orderActive` |
 
-Riders and business users bypass the state lookup and go directly to `handlers/riderCommands` or `handlers/businessCommands`.
+Riders and business users bypass the state lookup entirely — they are identified by `whatsapp_id` and routed directly to `handlers/riderCommands` or `handlers/businessCommands`.
 
 ### Order lifecycle (`orders/`)
 
 ```
 pending_payment → payment_claimed → confirmed → preparing
   → [modified_pending →] ready → rider_assigned → in_delivery → delivered
-  (or cancelled / disputed at any point)
+  (cancelled / disputed reachable from any state)
 ```
 
-- `state-machine.js` — `placeOrder()`, `transition()`, `assignRider()`
-- `notifier.js` — sends WhatsApp messages to all parties on each status change
-- `dispatcher.js` — finds nearest available rider; retries with exclusion list after timeout (configurable via `config` table key `rider_accept_timeout_minutes`)
+**Pickup variant** — when `orders.delivery_type = 'pickup'`:
+- `transition(orderId, 'ready')` skips `dispatcher.findAndAssign()` and fires `pickup_ready` instead
+- `orders.delivery_fee` is always 0; `payment_method` may be `'at_store'` (skips payment flow, starts at `confirmed`)
+
+Key files:
+- `orders/state-machine.js` — `placeOrder()`, `transition()`, `assignRider()`, `tryNextRider()`
+- `orders/notifier.js` — sends WhatsApp messages to all parties on each status change
+- `orders/dispatcher.js` — finds nearest available rider; tracks excluded riders in Redis (`dispatch:ex:{orderId}` SADD, 24h TTL) so rejected riders aren't re-offered
+
+### Delivery zone (`utils/geoUtils.js`)
+
+`getDeliveryZone()` reads `config.delivery_zone` (JSON polygon `[[lat,lng],...]`). If set, `address.js` runs `pointInPolygon()` (ray-casting) before placing an order. Addresses outside the zone are routed to the pickup flow if the business supports it, or rejected otherwise. An empty/missing value means no restriction.
+
+### Order watchdog (`jobs/orderWatchdog.js`)
+
+Started in `server.js` at boot; runs every 60 seconds. Checks three stuck states against the `config` table timeouts:
+
+| State | Config key | Action |
+|---|---|---|
+| `pending_payment` | `payment_timeout_minutes` (30) | Auto-cancels, notifies customer, notifies admin |
+| `payment_claimed` | `payment_confirm_timeout_minutes` (30) | One-time admin alert via WhatsApp |
+| `preparing` | `preparation_timeout_minutes` (90) | One-time admin alert via WhatsApp |
+
+Dedup key for alerts: `watchdog:alerted:{orderId}:{status}` in Redis (1-day TTL).
 
 ### Sender abstraction (`src/sender.js`)
 
-Re-exports `whatsapp/sender.js`. All handlers and notifiers call through this module — swap the implementation here to change the channel without touching the FSM.
+Single line re-exporting `whatsapp/sender.js`. All handlers and notifiers import from here — never directly from `whatsapp/sender.js`. Swapping providers means changing one file.
 
 Key methods: `sendText`, `sendButtons`, `sendList`, `sendPhoto`, `requestLocation`, `removeKeyboard`.
 
@@ -91,16 +128,46 @@ Registered in `server.js`:
 - `GET|POST|PUT|DELETE /api/admin/*` — JWT admin token required
 - `POST /api/business/login` — public
 - `GET|POST|PUT|DELETE /api/business/*` — JWT business token required
+- `GET /catalog/:businessId` — public HTML catalog page (product grid with photos)
+- `GET /directorio` — public HTML business directory listing
+- `GET /mapa` — public Leaflet map of all businesses with colored SVG pins; clicking a pin opens a card with "Ver menú" and "Contactar" (WhatsApp) links
+- `GET /icons` — public JSON icon registry; `Cache-Control: max-age=3600`; proxied from admin panel via Vite
 - `GET /health`
+
+Analytics endpoints (`GET /api/admin/analytics`, `GET /api/business/analytics`) share logic through `src/api/analyticsHelper.js` — only one has the `business_id` filter.
 
 ### Database
 
-Knex + PostgreSQL. Knexfile at `src/db/knexfile.js`. Models are thin wrappers in `src/db/models/`. The `config` table holds runtime tunables (`delivery_fee`, `rider_accept_timeout_minutes`, `payment_confirm_timeout_minutes`, `session_ttl_minutes`).
+Knex + PostgreSQL. Knexfile at `src/db/knexfile.js`. Models are thin wrappers in `src/db/models/`. All `whatsapp_id` columns (customers, businesses, riders, conversations) are indexed with a unique constraint.
 
-### Redis
+**`config` table keys** (all editable from admin panel):
 
-Used exclusively for:
-1. WhatsApp button maps: `wa:bmap:{chatId}` → JSON array of callback data strings
+| Key | Default | Purpose |
+|---|---|---|
+| `delivery_fee` | 30 | Added to delivery orders |
+| `rider_accept_timeout_minutes` | 3 | Before trying next rider |
+| `payment_timeout_minutes` | 30 | Auto-cancel if no payment |
+| `payment_confirm_timeout_minutes` | 30 | Alert admin if business slow |
+| `preparation_timeout_minutes` | 90 | Alert admin if business slow |
+| `session_ttl_minutes` | 60 | Conversation TTL |
+| `admin_whatsapp_id` | "" | Receives watchdog alerts |
+| `delivery_zone` | "" | JSON polygon or empty = no restriction |
+
+**Notable order columns**: `delivery_type` (`'delivery'`\|`'pickup'`), `payment_method` (`'transfer'`\|`'at_store'`), `delivery_fee`, `subtotal`, `total`.
+
+**Notable business columns**: `accepts_pickup` (bool), `address_text` (nullable — shown to customer in pickup flow).
+
+### Redis keys
+
+| Key pattern | Purpose |
+|---|---|
+| `wa:bmap:{chatId}` | Button-number → callback_data map (30-min TTL) |
+| `dispatch:ex:{orderId}` | Set of rider IDs already offered this order (24h TTL) |
+| `watchdog:alerted:{orderId}:{status}` | Dedup flag for admin alerts (1-day TTL) |
+
+## End-to-end test (`test-flow-wa.js`)
+
+`npm run test:wa` simulates a complete delivery order without WhatsApp. It patches `require.cache` to replace `src/sender.js` with a mock that prints to stdout and writes real button maps to Redis. The `reset()` function idempotently creates the test business, menu item, and rider if they don't exist. Run after any FSM or order-flow change to catch regressions.
 
 ## Environment
 
@@ -109,5 +176,4 @@ Copy `.env.example` to `.env` in `backend/`. Key vars:
 - `REDIS_URL`
 - `JWT_SECRET`
 - `PORT` (default 3000)
-
-The `TELEGRAM_*` vars in `.env.example` are legacy and unused — the bot runs over WhatsApp only.
+- `PUBLIC_URL` — base URL for photo/catalog links sent in WhatsApp messages (e.g. `http://localhost:3000` in dev)

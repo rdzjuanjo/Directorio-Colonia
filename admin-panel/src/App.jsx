@@ -7,6 +7,8 @@ import Businesses from './pages/Businesses.jsx';
 import Riders from './pages/Riders.jsx';
 import Disputes from './pages/Disputes.jsx';
 import Analytics from './pages/Analytics.jsx';
+import Zone from './pages/Zone.jsx';
+import CatalogStats from './pages/CatalogStats.jsx';
 
 function isAuth() {
   return !!localStorage.getItem('admin_token');
@@ -25,6 +27,8 @@ function Layout({ children }) {
         <NavLink to="/riders" className={navClass}>🛵 Repartidores</NavLink>
         <NavLink to="/disputes" className={navClass}>⚠️ Disputas</NavLink>
         <NavLink to="/analytics" className={navClass}>📈 Analíticas</NavLink>
+        <NavLink to="/zone" className={navClass}>🗺️ Zona de entrega</NavLink>
+        <NavLink to="/catalog-stats" className={navClass}>🤖 Bot catálogo</NavLink>
         <button
           className="mt-auto text-left px-4 py-2 rounded hover:bg-gray-700"
           onClick={() => { localStorage.removeItem('admin_token'); window.location.href = '/login'; }}>
@@ -50,6 +54,8 @@ export default function App() {
       <Route path="/riders" element={<Protected><Riders /></Protected>} />
       <Route path="/disputes" element={<Protected><Disputes /></Protected>} />
       <Route path="/analytics" element={<Protected><Analytics /></Protected>} />
+      <Route path="/zone" element={<Protected><Zone /></Protected>} />
+      <Route path="/catalog-stats" element={<Protected><CatalogStats /></Protected>} />
       <Route path="*" element={<Navigate to={isAuth() ? '/dashboard' : '/login'} />} />
     </Routes>
   );

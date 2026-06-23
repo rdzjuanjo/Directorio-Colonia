@@ -1,7 +1,9 @@
 const customers = require('../../db/models/customers');
+const businesses = require('../../db/models/businesses');
 const conversations = require('../../db/models/conversations');
 const sender = require('../../sender');
 const { placeOrder } = require('../../orders/state-machine');
+const { pointInPolygon, getDeliveryZone } = require('../../utils/geoUtils');
 
 async function handle({ chatId, text, callbackData, location, conv, customer }) {
   const ctx = conv.context_json || {};
@@ -24,12 +26,14 @@ async function handle({ chatId, text, callbackData, location, conv, customer }) 
   }
 
   if (callbackData === 'use_saved_address') {
+    if (await isOutsideZone(customer.default_lat, customer.default_lng)) {
+      return handleOutsideZone(chatId, cart, ctx);
+    }
     await placeOrder(chatId, cart, ctx.businessId, {
       address_text: customer.default_address_label,
       address_lat: customer.default_lat,
       address_lng: customer.default_lng,
     });
-    // placeOrder ya transiciona a awaiting_payment con orderId en el contexto
     return;
   }
 
@@ -66,13 +70,41 @@ async function handle({ chatId, text, callbackData, location, conv, customer }) 
   }
 }
 
+async function isOutsideZone(lat, lng) {
+  const zone = await getDeliveryZone();
+  if (!zone) return false; // sin zona configurada → todo permitido
+  return !pointInPolygon(lat, lng, zone);
+}
+
 async function finishWithLocation(chatId, cart, ctx) {
+  if (await isOutsideZone(ctx.newLat, ctx.newLng)) {
+    return handleOutsideZone(chatId, cart, ctx);
+  }
   await placeOrder(chatId, cart, ctx.businessId, {
-    address_text: `Lat: ${ctx.newLat}, Lng: ${ctx.newLng}`,
+    address_text: 'Mi dirección',
     address_lat: ctx.newLat,
     address_lng: ctx.newLng,
   });
-  // placeOrder ya transiciona a awaiting_payment con orderId en el contexto
+}
+
+async function handleOutsideZone(chatId, cart, ctx) {
+  const biz = await businesses.findById(ctx.businessId);
+  if (biz?.accepts_pickup) {
+    await sender.sendText(chatId,
+      '⚠️ Tu dirección está fuera de nuestra zona de entrega.\n\nSin embargo, podés recoger tu pedido directamente en el negocio:');
+    const pickupHandler = require('./pickup');
+    const newCtx = { ...ctx, pickupType: 'pickup' };
+    await conversations.set(chatId, 'confirm_pickup', cart, newCtx);
+    await pickupHandler.handle({
+      chatId,
+      callbackData: 'start_pickup',
+      conv: { context_json: newCtx, cart_json: cart },
+    });
+  } else {
+    await conversations.set(chatId, 'idle', [], {});
+    await sender.sendText(chatId,
+      '⚠️ Lo sentimos, tu dirección está fuera de nuestra zona de entrega y este negocio no ofrece retiro en tienda.\n\nPodés buscar otro negocio escribiendo lo que buscás.');
+  }
 }
 
 module.exports = { handle };

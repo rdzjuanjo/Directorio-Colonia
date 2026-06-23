@@ -11,13 +11,16 @@
     "test:wa": "node test-flow-wa.js",
     "migrate": "knex migrate:latest --knexfile src/db/knexfile.js",
     "migrate:rollback": "knex migrate:rollback --knexfile src/db/knexfile.js",
-    "seed": "knex seed:run --knexfile src/db/knexfile.js"
+    "seed": "knex seed:run --knexfile src/db/knexfile.js",
+    "seed:demo": "knex seed:run --specific=02_demo_catalog.js --knexfile src/db/knexfile.js",
+    "seed:clean": "node src/db/seeds/cleanup_demo.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.105.0",
     "@fastify/cors": "^11.2.0",
     "@fastify/jwt": "^10.1.0",
     "@fastify/multipart": "^10.0.0",
@@ -28,6 +31,7 @@
     "fastify": "^5.8.5",
     "knex": "^3.2.10",
     "mqtt": "^5.15.1",
+    "openai": "^6.44.0",
     "pg": "^8.21.0",
     "qrcode-terminal": "^0.12.0",
     "redis": "^6.0.0",

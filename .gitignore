@@ -5,3 +5,4 @@ build/
 *.log
 uploads/
 .DS_Store
+backend/.wwebjs_auth/

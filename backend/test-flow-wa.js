@@ -1,4 +1,6 @@
 require('dotenv').config();
+// El test simula el flujo de delivery completo — no el modo catálogo
+process.env.BOT_MODE = '';
 
 // ─── Personas ─────────────────────────────────────────────────────────────────
 // negocio y repartidor usan los whatsapp_ids reales de la DB
@@ -82,6 +84,9 @@ const mockWaSender = {
   removeKeyboard: async (chatId, text) =>
     box(chatId, [htmlToWa(text)]),
 
+  sendContact: async (chatId, name, phone) =>
+    box(chatId, [`📇 Contacto: ${name} (+${phone})`]),
+
   answerCallback: async () => {},
   setWebhook:     async () => ({ ok: true }),
 };
@@ -162,6 +167,7 @@ const LNG = -99.1332;
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
 async function reset() {
+  // Limpiar cliente anterior
   await db('conversations').where({ whatsapp_id: String(CLIENTE) }).delete();
   const prev = await db('customers').where({ whatsapp_id: String(CLIENTE) }).first();
   if (prev) {
@@ -170,9 +176,69 @@ async function reset() {
     await db('customers').where({ id: prev.id }).delete();
   }
   await redis.del(`wa:bmap:${CLIENTE}`);
-  await db('riders').where({ whatsapp_id: String(REPARTIDOR) })
-    .update({ status: 'waiting', current_lat: LAT, current_lng: LNG });
-  console.log(`${COLORS.dim}[setup] DB y Redis limpios. Repartidor → waiting.${COLORS.reset}`);
+  await redis.del(`wa:bmap:${REPARTIDOR}`);
+
+  // Asegurar que existe el negocio de prueba
+  let biz = await db('businesses').where({ whatsapp_id: String(NEGOCIO) }).first();
+  if (!biz) {
+    [biz] = await db('businesses').insert({
+      name: 'Pollos Don Juan',
+      category: 'comida',
+      whatsapp_id: String(NEGOCIO),
+      clabe: '123456789012345678',
+      bank_name: 'BBVA',
+      account_holder: 'Juan',
+      active: true,
+      accepts_pickup: true,
+      address_text: 'Calle 5 de Mayo #10',
+    }).returning('*');
+  }
+
+  // Asegurar que existe un business_user para el negocio (el FSM lo busca por este join)
+  const buExists = await db('business_users').where({ business_id: biz.id }).first();
+  if (!buExists) {
+    await db('business_users').insert({
+      business_id: biz.id,
+      email: 'negocio@test.local',
+      password_hash: 'test',
+    });
+  }
+
+  // Asegurar que el negocio tiene al menos un producto con "pollo"
+  const cats = await db('menu_categories').where({ business_id: biz.id });
+  let catId;
+  if (!cats.length) {
+    [{ id: catId }] = await db('menu_categories').insert({
+      business_id: biz.id, name: 'Especialidades', sort_order: 0,
+    }).returning('id');
+  } else {
+    catId = cats[0].id;
+  }
+  const items = await db('menu_items').where({ category_id: catId });
+  if (!items.length) {
+    await db('menu_items').insert({
+      category_id: catId,
+      name: 'Pollo asado', description: 'Pollo asado con papas', price: 80, available: true,
+    });
+  }
+
+  // Asegurar que existe el repartidor de prueba
+  const riderExists = await db('riders').where({ whatsapp_id: String(REPARTIDOR) }).first();
+  if (!riderExists) {
+    await db('riders').insert({
+      name: 'Carlos Rider',
+      whatsapp_id: String(REPARTIDOR),
+      status: 'waiting',
+      current_lat: LAT,
+      current_lng: LNG,
+      active: true,
+    });
+  } else {
+    await db('riders').where({ whatsapp_id: String(REPARTIDOR) })
+      .update({ status: 'waiting', current_lat: LAT, current_lng: LNG });
+  }
+
+  console.log(`${COLORS.dim}[setup] DB y Redis limpios. Negocio y repartidor listos.${COLORS.reset}`);
 }
 
 // ─── Flujo completo ───────────────────────────────────────────────────────────

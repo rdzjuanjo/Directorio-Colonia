@@ -26,8 +26,12 @@ async function handle({ chatId, text, callbackData, businessUser }) {
   const listoMatch = upperText?.match(/^LISTO\s+(\d+)$/);
   if (listoMatch) {
     const orderId = parseInt(listoMatch[1]);
+    const order = await orders.findById(orderId);
     await orderFsm.transition(orderId, 'ready');
-    await sender.sendText(chatId, `✅ Pedido #${orderId} marcado como listo. Buscando repartidor...`);
+    const msg = order?.delivery_type === 'pickup'
+      ? `✅ Pedido #${orderId} listo para retiro en tienda. Se notificó al cliente.`
+      : `✅ Pedido #${orderId} marcado como listo. Buscando repartidor...`;
+    await sender.sendText(chatId, msg);
     return;
   }
 

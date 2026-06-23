@@ -32,4 +32,8 @@ export const api = {
   markReady: (id) => req('POST', `/orders/${id}/ready`),
   updateOrderItems: (id, items) => req('PUT', `/orders/${id}/items`, { items }),
   analytics: (from, to) => req('GET', `/analytics?from=${from}&to=${to}`),
+  forgotPassword: (email) =>
+    fetch(`${BASE}/forgot-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) }).then((r) => r.json()),
+  resetPassword: (code, newPassword) =>
+    fetch(`${BASE}/reset-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, newPassword }) }).then((r) => r.json()),
 };

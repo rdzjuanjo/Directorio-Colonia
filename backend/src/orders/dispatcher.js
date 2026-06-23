@@ -1,6 +1,5 @@
 const ridersDb = require('../db/models/riders');
 const ordersDb = require('../db/models/orders');
-const businessesDb = require('../db/models/businesses');
 const sender = require('../sender');
 
 async function findAndAssign(orderId, excludeRiderIds = []) {
@@ -13,6 +12,10 @@ async function findAndAssign(orderId, excludeRiderIds = []) {
     return;
   }
 
+  const redis = require('../redis');
+  await redis.sAdd(`dispatch:ex:${orderId}`, String(nearest.id));
+  await redis.expire(`dispatch:ex:${orderId}`, 86400);
+
   const orderFsm = require('./state-machine');
   await orderFsm.assignRider(orderId, nearest.id);
 
@@ -23,14 +26,13 @@ async function findAndAssign(orderId, excludeRiderIds = []) {
 
   setTimeout(async () => {
     const current = await ordersDb.findById(orderId);
-    if (current?.status === 'rider_assigned') {
+    if (current?.status === 'rider_assigned' && current?.rider_id === nearest.id) {
       await findAndAssign(orderId, [...excludeRiderIds, nearest.id]);
     }
   }, timeoutMin * 60 * 1000);
 }
 
 async function handleNoRiders(order, orderId) {
-  // Notificar al admin si está configurado
   const db = require('../db');
   const adminCfg = await db('config').where({ key: 'admin_whatsapp_id' }).first();
   if (adminCfg?.value) {
@@ -38,10 +40,7 @@ async function handleNoRiders(order, orderId) {
       `⚠️ Sin repartidores para pedido #${orderId} (${order.business_name} → ${order.address_text}). Asigna uno manualmente desde el panel.`);
   }
 
-  // Ofrecer pickup si el negocio lo acepta
-  const biz = await businessesDb.findById(order.business_id);
-  if (biz?.accepts_pickup) {
-    const loc = biz.address_text ? `\n📍 ${biz.address_text}` : '';
+  if (order.business_accepts_pickup) {
     await sender.sendButtons(order.customer_whatsapp_id,
       `⚠️ No hay repartidores disponibles ahora para el pedido #${orderId}.\n\n¿Qué querés hacer?`,
       [

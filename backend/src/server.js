@@ -13,6 +13,7 @@ const redisClient = require('./redis');
 const adminRoutes = require('./api/admin');
 const businessRoutes = require('./api/business');
 const catalogRoutes = require('./api/catalog');
+const webchatRoutes = require('./webchat/routes');
 
 const app = Fastify({ logger: false });
 
@@ -31,6 +32,7 @@ async function bootstrap() {
   await app.register(adminRoutes, { prefix: '/api/admin' });
   await app.register(businessRoutes, { prefix: '/api/business' });
   await app.register(catalogRoutes);
+  await app.register(webchatRoutes);
 
   app.get('/health', async () => ({ status: 'ok', provider: 'whatsapp' }));
 
@@ -42,6 +44,9 @@ async function bootstrap() {
   console.log('🏪 Panel negocio:  http://localhost:5174\n');
 
   startWhatsApp();
+
+  const { startWatchdog } = require('./jobs/orderWatchdog');
+  startWatchdog();
 }
 
 bootstrap().catch((err) => {

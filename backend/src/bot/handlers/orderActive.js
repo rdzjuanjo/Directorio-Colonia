@@ -40,14 +40,14 @@ async function handle({ chatId, text, callbackData, conv }) {
       delivery_type: 'pickup',
       delivery_fee: 0,
       total: db.raw('subtotal'),
+      status: 'confirmed',
       updated_at: db.fn.now(),
     });
-    const biz = await require('../../db/models/businesses').findById(order.business_id);
-    const loc = biz?.address_text ? `\n📍 ${biz.address_text}` : '';
+    const loc = order.business_address_text ? `\n📍 ${order.business_address_text}` : '';
     await sender.sendText(chatId,
-      `✅ Pedido #${orderId} cambiado a retiro en tienda.\n\n🏪 ${biz?.name || 'El negocio'}${loc}\n\nTe avisamos cuando esté listo para recoger.`);
+      `✅ Pedido #${orderId} cambiado a retiro en tienda.\n\n🏪 ${order.business_name}${loc}\n\nTe avisamos cuando esté listo para recoger.`);
     await sender.sendText(order.business_whatsapp_id,
-      `🏪 Pedido #${orderId} ahora es retiro en tienda (sin repartidor). Cliente irá a buscarlo.`);
+      `🏪 Pedido #${orderId} ahora es retiro en tienda (sin repartidor). Márcalo como LISTO cuando esté listo para que el cliente venga.`);
     return;
   }
 

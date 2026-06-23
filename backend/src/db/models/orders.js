@@ -8,7 +8,7 @@ module.exports = {
       .select('orders.*', 'customers.name as customer_name', 'customers.whatsapp_id as customer_whatsapp_id',
         'businesses.name as business_name', 'businesses.whatsapp_id as business_whatsapp_id',
         'businesses.clabe', 'businesses.bank_name', 'businesses.account_holder',
-        'businesses.address_text as business_address_text')
+        'businesses.address_text as business_address_text', 'businesses.accepts_pickup as business_accepts_pickup')
       .first(),
 
   findWithItems: async (id) => {
@@ -46,9 +46,11 @@ module.exports = {
   updateItems: async (id, items) => {
     const subtotal = items.reduce((s, i) => s + i.unit_price * i.quantity, 0);
     return db.transaction(async (trx) => {
+      const order = await trx('orders').where({ id }).select('delivery_type').first();
       await trx('order_items').where({ order_id: id }).delete();
       await trx('order_items').insert(items.map((i) => ({ ...i, order_id: id })));
-      const deliveryFee = await db('config').where({ key: 'delivery_fee' }).first().then((r) => parseFloat(r.value));
+      const deliveryFee = order?.delivery_type === 'pickup' ? 0
+        : await db('config').where({ key: 'delivery_fee' }).first().then((r) => parseFloat(r.value));
       await trx('orders').where({ id }).update({ subtotal, total: subtotal + deliveryFee, updated_at: db.fn.now() });
     });
   },

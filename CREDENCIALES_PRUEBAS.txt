@@ -1,0 +1,39 @@
+CREDENCIALES DE PRUEBA — Gestor de Colonia
+==========================================
+
+URLs
+----
+Bot webchat:      http://localhost:3000/webchat
+Catálogo web:     http://localhost:3000/catalog/{id}
+Directorio:       http://localhost:3000/directorio
+Mapa de negocios: http://localhost:3000/mapa
+Panel admin:      http://localhost:5173
+Panel negocios:   http://localhost:5174
+
+
+ADMINISTRADOR GENERAL
+---------------------
+URL:        http://localhost:5173
+Email:      admin@colonia.local
+Contraseña: admin1234
+
+
+NEGOCIOS DEMO (panel en http://localhost:5174)
+----------------------------------------------
+Contraseña de todos: demo1234
+
+  Negocio               Email
+  ──────────────────────────────────────────
+  Tacos El Paisa        tacos@demo.local
+  Comedor La Familia    comedor@demo.local
+  Minisuper Hernández   super@demo.local
+  Carnicería La Mejor   carniceria@demo.local
+  Panadería San José    panaderia@demo.local
+  Farmacia Colonia      farmacia@demo.local
+  Miscelánea Lupita     miscelanea@demo.local
+
+
+BOT DE WHATSAPP / WEBCHAT
+--------------------------
+No requiere login. Acceder directamente en:
+  http://localhost:3000/webchat

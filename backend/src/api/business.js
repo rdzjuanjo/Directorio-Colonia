@@ -1,10 +1,13 @@
 const path = require('path');
 const fs = require('fs');
+const bcrypt = require('bcryptjs');
 const db = require('../db');
 const menuDb = require('../db/models/menu');
 const ordersDb = require('../db/models/orders');
 const businessesDb = require('../db/models/businesses');
 const { verifyBusinessToken, loginBusiness } = require('./auth');
+const redis = require('../redis');
+const sender = require('../sender');
 
 async function businessRoutes(fastify) {
   // Ruta pública — sin autenticación
@@ -13,6 +16,40 @@ async function businessRoutes(fastify) {
     const token = await loginBusiness(fastify, email, password);
     if (!token) return reply.code(401).send({ error: 'Credenciales inválidas' });
     return { token };
+  });
+
+  fastify.post('/forgot-password', async (req, reply) => {
+    const { email } = req.body || {};
+    if (!email) return reply.code(400).send({ error: 'Email requerido' });
+
+    const user = await db('business_users').where({ email }).first();
+    if (!user) return { ok: true }; // no revelar si existe o no
+
+    const business = await db('businesses').where({ id: user.business_id }).first();
+    if (!business?.whatsapp_id) return { ok: true };
+
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    await redis.set(`reset:biz:${code}`, String(user.id), { EX: 900 });
+
+    const phone = business.whatsapp_id.split('@')[0];
+    await sender.sendText(`${phone}@c.us`, `Tu código de recuperación de contraseña es: *${code}*\nVálido por 15 minutos.`);
+
+    return { ok: true };
+  });
+
+  fastify.post('/reset-password', async (req, reply) => {
+    const { code, newPassword } = req.body || {};
+    if (!code || !newPassword) return reply.code(400).send({ error: 'Código y nueva contraseña requeridos' });
+    if (newPassword.length < 6) return reply.code(400).send({ error: 'La contraseña debe tener al menos 6 caracteres' });
+
+    const userId = await redis.get(`reset:biz:${code}`);
+    if (!userId) return reply.code(400).send({ error: 'Código inválido o expirado' });
+
+    const hash = await bcrypt.hash(newPassword, 10);
+    await db('business_users').where({ id: Number(userId) }).update({ password_hash: hash });
+    await redis.del(`reset:biz:${code}`);
+
+    return { ok: true };
   });
 
   // Todas las rutas siguientes requieren token
@@ -75,35 +112,8 @@ async function businessRoutes(fastify) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
         return reply.code(400).send({ error: 'from y to deben tener formato YYYY-MM-DD' });
       }
-      const id = bizId(req);
-      const [byDay, products] = await Promise.all([
-        db.raw(
-          `SELECT DATE(created_at)::text AS date, COUNT(*)::int AS orders, SUM(total)::float AS revenue
-           FROM orders WHERE created_at::date BETWEEN ? AND ? AND status = 'delivered' AND business_id = ?
-           GROUP BY DATE(created_at) ORDER BY date ASC`,
-          [from, to, id],
-        ),
-        db.raw(
-          `SELECT oi.item_name AS name, SUM(oi.quantity)::int AS qty,
-                  SUM(oi.quantity * oi.unit_price)::float AS revenue
-           FROM order_items oi JOIN orders o ON o.id = oi.order_id
-           WHERE o.created_at::date BETWEEN ? AND ? AND o.status = 'delivered' AND o.business_id = ?
-           GROUP BY oi.item_name ORDER BY qty DESC LIMIT 3`,
-          [from, to, id],
-        ),
-      ]);
-      const days = byDay.rows;
-      const totalOrders = days.reduce((s, d) => s + d.orders, 0);
-      const totalRevenue = days.reduce((s, d) => s + (d.revenue || 0), 0);
-      return {
-        ordersByDay: days,
-        topProducts: products.rows,
-        totals: {
-          orders: totalOrders,
-          revenue: parseFloat(totalRevenue.toFixed(2)),
-          avg_ticket: totalOrders ? parseFloat((totalRevenue / totalOrders).toFixed(2)) : 0,
-        },
-      };
+      const { analyticsQuery } = require('./analyticsHelper');
+      return analyticsQuery(from, to, bizId(req));
     });
 
     f.put('/orders/:id/items', async (req) => {

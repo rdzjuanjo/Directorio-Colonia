@@ -17,6 +17,9 @@ const handlers = {
   order_active: require('./handlers/orderActive'),
   rider_commands: require('./handlers/riderCommands'),
   business_commands: require('./handlers/businessCommands'),
+  // Modo catálogo
+  catalog_search:   require('./handlers/catalogSearch'),
+  viewing_business: require('./handlers/catalogSearch'),
 };
 
 async function handleUpdate(update) {

@@ -76,8 +76,10 @@ async function assignRider(orderId, riderId) {
 }
 
 async function tryNextRider(orderId) {
-  const order = await ordersDb.findWithItems(orderId);
-  await dispatcher.findAndAssign(orderId, order._excludedRiders || []);
+  const redis = require('../redis');
+  const members = await redis.sMembers(`dispatch:ex:${orderId}`);
+  const excludeRiderIds = members.map(Number);
+  await dispatcher.findAndAssign(orderId, excludeRiderIds);
 }
 
 module.exports = { placeOrder, transition, assignRider, tryNextRider };

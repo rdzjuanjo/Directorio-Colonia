@@ -72,40 +72,68 @@ async function adminRoutes(fastify) {
       return { ok: true };
     });
 
-    // Analíticas
+    // Analíticas del bot catálogo
+    f.get('/catalog-analytics', async (req, reply) => {
+      const { from, to } = req.query;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+        return reply.code(400).send({ error: 'from y to deben tener formato YYYY-MM-DD' });
+      }
+
+      const [totalsRows, byDay, topBizRows, topQueryRows] = await Promise.all([
+        db('bot_catalog_events')
+          .whereRaw('created_at::date BETWEEN ? AND ?', [from, to])
+          .select(
+            db.raw('COUNT(*) FILTER (WHERE event_type = \'search\')::int AS searches'),
+            db.raw('COUNT(DISTINCT whatsapp_id) FILTER (WHERE event_type = \'search\')::int AS unique_users'),
+            db.raw('COUNT(*) FILTER (WHERE event_type = \'business_viewed\')::int AS business_views'),
+            db.raw('COUNT(*) FILTER (WHERE event_type = \'contact_shared\')::int AS contacts_shared')
+          )
+          .first(),
+        db('bot_catalog_events')
+          .whereRaw('created_at::date BETWEEN ? AND ?', [from, to])
+          .where('event_type', 'search')
+          .select(db.raw('DATE(created_at)::text AS date'), db.raw('COUNT(*)::int AS count'))
+          .groupBy(db.raw('DATE(created_at)'))
+          .orderBy('date'),
+        db('bot_catalog_events as e')
+          .join('businesses as b', 'e.business_id', 'b.id')
+          .whereRaw('e.created_at::date BETWEEN ? AND ?', [from, to])
+          .whereIn('e.event_type', ['business_viewed', 'contact_shared'])
+          .select(
+            'b.id',
+            'b.name',
+            db.raw('COUNT(*) FILTER (WHERE e.event_type = \'business_viewed\')::int AS views'),
+            db.raw('COUNT(*) FILTER (WHERE e.event_type = \'contact_shared\')::int AS contacts')
+          )
+          .groupBy('b.id', 'b.name')
+          .orderBy('views', 'desc')
+          .limit(5),
+        db('bot_catalog_events')
+          .whereRaw('created_at::date BETWEEN ? AND ?', [from, to])
+          .where('event_type', 'search')
+          .whereNotNull('query_text')
+          .select('query_text AS query', db.raw('COUNT(*)::int AS count'))
+          .groupBy('query_text')
+          .orderBy('count', 'desc')
+          .limit(10),
+      ]);
+
+      return {
+        totals: totalsRows || { searches: 0, unique_users: 0, business_views: 0, contacts_shared: 0 },
+        searchesByDay: byDay,
+        topBusinesses: topBizRows,
+        topQueries: topQueryRows,
+      };
+    });
+
+    // Analíticas de pedidos
     f.get('/analytics', async (req, reply) => {
       const { from, to } = req.query;
       if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
         return reply.code(400).send({ error: 'from y to deben tener formato YYYY-MM-DD' });
       }
-      const [byDay, products] = await Promise.all([
-        db.raw(
-          `SELECT DATE(created_at)::text AS date, COUNT(*)::int AS orders, SUM(total)::float AS revenue
-           FROM orders WHERE created_at::date BETWEEN ? AND ? AND status = 'delivered'
-           GROUP BY DATE(created_at) ORDER BY date ASC`,
-          [from, to],
-        ),
-        db.raw(
-          `SELECT oi.item_name AS name, SUM(oi.quantity)::int AS qty,
-                  SUM(oi.quantity * oi.unit_price)::float AS revenue
-           FROM order_items oi JOIN orders o ON o.id = oi.order_id
-           WHERE o.created_at::date BETWEEN ? AND ? AND o.status = 'delivered'
-           GROUP BY oi.item_name ORDER BY qty DESC LIMIT 3`,
-          [from, to],
-        ),
-      ]);
-      const days = byDay.rows;
-      const totalOrders = days.reduce((s, d) => s + d.orders, 0);
-      const totalRevenue = days.reduce((s, d) => s + (d.revenue || 0), 0);
-      return {
-        ordersByDay: days,
-        topProducts: products.rows,
-        totals: {
-          orders: totalOrders,
-          revenue: parseFloat(totalRevenue.toFixed(2)),
-          avg_ticket: totalOrders ? parseFloat((totalRevenue / totalOrders).toFixed(2)) : 0,
-        },
-      };
+      const { analyticsQuery } = require('./analyticsHelper');
+      return analyticsQuery(from, to);
     });
 
     // Dashboard stats
