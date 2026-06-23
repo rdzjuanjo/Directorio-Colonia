@@ -63,6 +63,10 @@ const mockSender = {
     box(chatId, [`📸 ${photoUrl}`, stripHtml(caption || '')]);
   },
 
+  sendLocation: async (chatId, lat, lng, name) => {
+    box(chatId, [`📍 Ubicación: ${name || ''}`, `lat: ${lat}, lng: ${lng}`]);
+  },
+
   requestLocation: async (chatId, text) => {
     box(chatId, [stripHtml(text), '', '[📍 Compartir mi ubicación  →  /loc <lat> <lon>]']);
   },

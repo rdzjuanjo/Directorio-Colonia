@@ -152,8 +152,10 @@ async function runLlmSearch(chatId, query) {
   }
 
   if (!result.businesses || result.businesses.length === 0) {
-    const msg = result.no_results_message || result.message ||
-      'No encontré negocios que coincidan. Intenta con otras palabras.';
+    const rawMsg = result.no_results_message || result.message;
+    const msg = (rawMsg && rawMsg !== 'null')
+      ? rawMsg
+      : 'No encontré negocios que coincidan. Intenta con otras palabras.';
     await sender.sendButtons(chatId, msg,
       [{ label: '⬅ Ver categorías', data: 'back_to_categories' }]);
     await conversations.set(chatId, 'catalog_search', [], { lastQuery: query, shownBusinesses: [] });
@@ -183,7 +185,10 @@ async function runLlmSearch(chatId, query) {
     { label: '⬅ Ver categorías', data: 'back_to_categories' },
   ];
 
-  await sender.sendButtons(chatId, result.message, buttons);
+  const displayMsg = (result.message && result.message !== 'null')
+    ? result.message
+    : 'Aquí están los negocios que encontré:';
+  await sender.sendButtons(chatId, displayMsg, buttons);
   await conversations.set(chatId, 'catalog_search', [], {
     lastQuery: query,
     shownBusinesses: valid.map(({ llm }) => ({ id: parseInt(llm.id, 10), highlight: llm.highlight })),
