@@ -1,3 +1,4 @@
+// backend/src/server.js — Punto de entrada principal: registra plugins Fastify, monta rutas de API, inicia el bot de WhatsApp y el watchdog de pedidos
 require('dotenv').config();
 const Fastify = require('fastify');
 const cors = require('@fastify/cors');

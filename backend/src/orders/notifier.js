@@ -1,3 +1,4 @@
+// notifier.js — Envía mensajes de WhatsApp a cliente, negocio y repartidor en cada transición de estado del pedido
 const ordersDb = require('../db/models/orders');
 const ridersDb = require('../db/models/riders');
 const sender = require('../sender');

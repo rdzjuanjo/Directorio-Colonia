@@ -1,3 +1,4 @@
+// orders.js — Modelo de pedidos: creación con ítems, búsqueda con joins, actualización de estado, rider y totales
 const db = require('../index');
 
 module.exports = {

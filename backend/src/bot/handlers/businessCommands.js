@@ -1,3 +1,4 @@
+// businessCommands.js — Comandos WhatsApp del dueño del negocio: CONFIRMAR, RECHAZAR, LISTO + menú de ayuda
 const orders = require('../../db/models/orders');
 const sender = require('../../sender');
 const orderFsm = require('../../orders/state-machine');

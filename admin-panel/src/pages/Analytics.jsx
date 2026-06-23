@@ -1,3 +1,4 @@
+// Analytics.jsx — Analíticas de la plataforma: gráficas de pedidos, ingresos y tendencias por período (recharts)
 import React, { useState, useEffect } from 'react';
 import {
   BarChart, Bar, AreaChart, Area,

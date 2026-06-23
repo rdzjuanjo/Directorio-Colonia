@@ -1,3 +1,4 @@
+// Hours.jsx — Configuración de horarios de atención: activa/desactiva cada día y define hora de apertura y cierre
 import React, { useEffect, useState } from 'react';
 import { api } from '../api.js';
 

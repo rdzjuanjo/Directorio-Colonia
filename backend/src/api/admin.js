@@ -1,3 +1,4 @@
+// admin.js — Rutas protegidas de administrador: negocios, repartidores, pedidos, config, analíticas y clientes
 const bcrypt = require('bcryptjs');
 const db = require('../db');
 const businessesDb = require('../db/models/businesses');

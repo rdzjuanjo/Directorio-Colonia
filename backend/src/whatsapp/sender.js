@@ -1,3 +1,4 @@
+// sender.js — Implementación del sender para WhatsApp: texto, botones numerados (mapa en Redis), listas, fotos, ubicaciones y contactos
 const redis = require('../redis');
 
 let waClient = null;

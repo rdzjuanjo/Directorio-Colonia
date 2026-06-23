@@ -1,3 +1,4 @@
+// orderWatchdog.js — Job que corre cada 60s: cancela pedidos con pago vencido y alerta al admin sobre pedidos lentos (dedup en Redis)
 const db = require('../db');
 const redis = require('../redis');
 const sender = require('../sender');

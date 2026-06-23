@@ -1,3 +1,4 @@
+// 20240002_add_pickup.js — Agrega soporte de retiro en tienda: columnas delivery_type, payment_method y accepts_pickup
 exports.up = async function (knex) {
   await knex.schema.table('orders', (t) => {
     t.string('delivery_type').defaultTo('delivery');   // 'delivery' | 'pickup'

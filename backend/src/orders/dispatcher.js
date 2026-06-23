@@ -1,3 +1,4 @@
+// dispatcher.js — Encuentra el repartidor disponible más cercano y gestiona reintentos con timeout configurable por Redis
 const ridersDb = require('../db/models/riders');
 const ordersDb = require('../db/models/orders');
 const sender = require('../sender');

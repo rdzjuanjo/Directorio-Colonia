@@ -1,3 +1,4 @@
+// pickup.js — Flujo de retiro en tienda: muestra la dirección del negocio, elige método de pago y crea el pedido con delivery_type=pickup
 const conversations = require('../../db/models/conversations');
 const businesses = require('../../db/models/businesses');
 const sender = require('../../sender');

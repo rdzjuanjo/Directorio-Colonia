@@ -1,3 +1,4 @@
+// CatalogStats.jsx — Estadísticas del bot catálogo: eventos de búsqueda, negocios más vistos y contactos más compartidos
 import React, { useState, useEffect } from 'react';
 import {
   BarChart, Bar,

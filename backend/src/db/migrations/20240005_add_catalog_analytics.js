@@ -1,3 +1,4 @@
+// 20240005_add_catalog_analytics.js — Agrega la tabla bot_catalog_events para registrar búsquedas, negocios vistos y contactos compartidos
 exports.up = async function (knex) {
   await knex.schema.createTable('bot_catalog_events', (t) => {
     t.increments('id');

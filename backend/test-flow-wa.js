@@ -1,3 +1,4 @@
+// test-flow-wa.js — Prueba end-to-end completa: parchea el sender con un mock e imprime el flujo de WhatsApp en consola
 require('dotenv').config();
 // El test simula el flujo de delivery completo — no el modo catálogo
 process.env.BOT_MODE = '';

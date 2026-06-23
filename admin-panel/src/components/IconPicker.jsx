@@ -1,3 +1,4 @@
+// IconPicker.jsx — Selector visual de íconos SVG para negocios: carga los 25 íconos disponibles desde GET /icons
 import { useEffect, useState } from 'react';
 
 export default function IconPicker({ value, category, onChange }) {

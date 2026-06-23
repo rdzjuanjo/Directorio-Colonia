@@ -1,3 +1,4 @@
+// fsm.js — Máquina de estados del bot: recibe updates normalizados, identifica el rol del usuario y despacha al handler según el estado de la conversación
 const conversations = require('../db/models/conversations');
 const customers = require('../db/models/customers');
 const sender = require('../sender');

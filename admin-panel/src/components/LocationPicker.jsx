@@ -1,3 +1,4 @@
+// LocationPicker.jsx — Mapa Leaflet para fijar la ubicación del negocio arrastrando un pin; devuelve lat/lng al formulario padre
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';

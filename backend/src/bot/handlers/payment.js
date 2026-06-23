@@ -1,3 +1,4 @@
+// payment.js — Flujo de pago por transferencia: muestra CLABE/datos bancarios y espera la confirmación del cliente
 const orders = require('../../db/models/orders');
 const conversations = require('../../db/models/conversations');
 const sender = require('../../sender');

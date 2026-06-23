@@ -1,3 +1,4 @@
+// cart.js — Gestión del carrito: ver ítems, modificar cantidades, elegir entre entrega a domicilio o retiro en tienda
 const conversations = require('../../db/models/conversations');
 const businesses = require('../../db/models/businesses');
 const sender = require('../../sender');

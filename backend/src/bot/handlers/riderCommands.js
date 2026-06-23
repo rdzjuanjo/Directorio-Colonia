@@ -1,3 +1,4 @@
+// riderCommands.js — Comandos WhatsApp del repartidor: ACEPTAR, RECHAZAR, RECOGER, ENTREGAR + menú de ayuda
 const riders = require('../../db/models/riders');
 const orders = require('../../db/models/orders');
 const sender = require('../../sender');

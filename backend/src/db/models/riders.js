@@ -1,3 +1,4 @@
+// riders.js — Modelo de repartidores: CRUD, findAvailable(), updateLocation(), cálculo de distancia haversine para dispatch
 const db = require('../index');
 
 const TABLE = 'riders';

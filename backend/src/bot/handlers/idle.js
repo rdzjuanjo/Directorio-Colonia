@@ -1,3 +1,4 @@
+// idle.js — Estado inactivo: muestra categorías de negocios y deriva al flujo de catálogo según BOT_MODE
 const businesses = require('../../db/models/businesses');
 const conversations = require('../../db/models/conversations');
 const sender = require('../../sender');

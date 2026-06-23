@@ -1,3 +1,4 @@
+// Riders.jsx — CRUD de repartidores: alta, edición, baja y vista de disponibilidad y última ubicación conocida
 import React, { useEffect, useState } from 'react';
 import { api } from '../api.js';
 

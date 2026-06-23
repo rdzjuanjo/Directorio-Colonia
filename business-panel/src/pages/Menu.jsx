@@ -1,3 +1,4 @@
+// Menu.jsx — Gestión del menú: categorías y productos con precios, descripción, disponibilidad y subida de fotos
 import React, { useEffect, useState } from 'react';
 import { api } from '../api.js';
 

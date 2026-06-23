@@ -1,3 +1,4 @@
+// 01_admin.js — Seed idempotente: crea usuario admin por defecto e inserta todos los valores de config si no existen
 const bcrypt = require('bcryptjs');
 
 exports.seed = async function (knex) {

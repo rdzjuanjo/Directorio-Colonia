@@ -1,3 +1,4 @@
+// sender.js — Re-exporta whatsapp/sender.js; único punto de cambio para swappear el canal de mensajería
 'use strict';
 
 const wa = require('./whatsapp/sender');

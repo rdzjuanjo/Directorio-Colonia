@@ -1,3 +1,4 @@
+// api.js — Cliente HTTP del panel admin: wrapper fetch con JWT, maneja errores HTTP y expone todos los calls a /api/admin/*
 const BASE = '/api/admin';
 
 function token() {

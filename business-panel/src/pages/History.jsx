@@ -1,3 +1,4 @@
+// History.jsx — Historial de pedidos entregados y cancelados con filtros de fecha y totales por período
 import React, { useEffect, useState } from 'react';
 import { api } from '../api.js';
 

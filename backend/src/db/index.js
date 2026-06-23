@@ -1,3 +1,4 @@
+// index.js — Instancia de Knex conectada a PostgreSQL via DATABASE_URL; importado por todos los modelos y rutas de API
 const knex = require('knex');
 const config = require('./knexfile');
 

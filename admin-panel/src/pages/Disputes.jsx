@@ -1,3 +1,4 @@
+// Disputes.jsx — Gestión de disputas: listado de disputas abiertas, resolución y posible baneo del cliente involucrado
 import React, { useEffect, useState } from 'react';
 import { api } from '../api.js';
 

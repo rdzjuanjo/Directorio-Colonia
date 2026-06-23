@@ -1,3 +1,4 @@
+// Zone.jsx — Editor de zona de entrega: dibuja el polígono de cobertura en un mapa Leaflet y lo guarda en config.delivery_zone
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';

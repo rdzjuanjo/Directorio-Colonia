@@ -1,3 +1,4 @@
+// Businesses.jsx — CRUD de negocios: formulario con mapa de ubicación, selector de ícono SVG y configuración de horarios
 import React, { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import LocationPicker from '../components/LocationPicker.jsx';

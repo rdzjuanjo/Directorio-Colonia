@@ -1,3 +1,4 @@
+// 20240001_initial_schema.js — Migración inicial: crea todas las tablas base (admins, businesses, customers, orders, riders, conversations, config, disputes)
 exports.up = async function (knex) {
   await knex.schema.createTable('admins', (t) => {
     t.increments('id');

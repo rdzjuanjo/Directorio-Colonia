@@ -1,3 +1,4 @@
+// geoUtils.js — getDeliveryZone() y pointInPolygon() (ray-casting) para validar si una dirección cae dentro de la zona de cobertura configurada
 const db = require('../db');
 
 // Ray-casting algorithm: returns true if (lat, lng) is inside polygon.

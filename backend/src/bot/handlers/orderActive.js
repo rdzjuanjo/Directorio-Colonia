@@ -1,3 +1,4 @@
+// orderActive.js — Seguimiento del pedido activo: informa el estado al cliente y permite cambiar de entrega a retiro en tienda
 const orders = require('../../db/models/orders');
 const sender = require('../../sender');
 

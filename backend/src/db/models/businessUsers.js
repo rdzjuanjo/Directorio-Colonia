@@ -1,3 +1,4 @@
+// businessUsers.js — Modelo de usuarios de negocio: autenticación, generación y verificación de código de reset de contraseña por WhatsApp
 const db = require('../index');
 
 module.exports = {

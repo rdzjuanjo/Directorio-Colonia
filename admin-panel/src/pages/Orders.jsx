@@ -1,3 +1,4 @@
+// Orders.jsx — Gestión completa de pedidos: tabla con filtros por estado, detalle de pedido y acciones de admin
 import React, { useEffect, useState } from 'react';
 import { api } from '../api.js';
 

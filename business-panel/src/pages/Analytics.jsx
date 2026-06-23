@@ -1,3 +1,4 @@
+// Analytics.jsx — Analíticas del negocio: ingresos, pedidos por período y productos más vendidos (recharts)
 import React, { useState, useEffect } from 'react';
 import {
   BarChart, Bar, AreaChart, Area,

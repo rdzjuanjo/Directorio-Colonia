@@ -1,3 +1,4 @@
+// businesses.js — Modelo de negocios: CRUD, findActive(), isOpen() (evalúa hours_json contra la hora actual del sistema)
 const db = require('../index');
 
 const TABLE = 'businesses';

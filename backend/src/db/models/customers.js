@@ -1,3 +1,4 @@
+// customers.js — Modelo de clientes: registro, búsqueda por whatsapp_id, actualización de nombre y ubicación por defecto
 const db = require('../index');
 
 const TABLE = 'customers';

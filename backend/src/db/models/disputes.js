@@ -1,3 +1,4 @@
+// disputes.js — Modelo de disputas: creación desde pedidos, listado con filtros de estado, resolución y baneo de cliente por admin
 const db = require('../index');
 
 const TABLE = 'dispute_logs';

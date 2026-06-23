@@ -1,3 +1,4 @@
+// businessIcons.js — Registro de 25 íconos SVG disponibles para negocios; expone el array a través del endpoint GET /icons
 'use strict';
 
 // Registry of SVG icons for businesses.

@@ -1,3 +1,4 @@
+// redis.js — Cliente Redis compartido; usado para mapas de botones WhatsApp, sets de dispatch y dedup del watchdog
 const { createClient } = require('redis');
 
 const client = createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });

@@ -1,3 +1,4 @@
+// knexfile.js — Configuración de Knex: connection string, directorio de migrations y seeds
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 
 module.exports = {

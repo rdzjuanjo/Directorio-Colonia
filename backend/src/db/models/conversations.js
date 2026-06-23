@@ -1,3 +1,4 @@
+// conversations.js — Modelo de conversaciones: estado FSM por whatsapp_id con TTL configurable; serializa carrito y contexto en JSON
 const db = require('../index');
 
 const TABLE = 'conversations';

@@ -1,3 +1,4 @@
+// sessions.js — Mapa en memoria de sesiones SSE activas: sessionId→emitter, chatId→sessionId; evita race conditions en reconexiones
 'use strict';
 
 const { EventEmitter } = require('events');

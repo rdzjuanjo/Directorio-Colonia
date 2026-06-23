@@ -1,3 +1,4 @@
+// search.js — Búsqueda legacy de negocios por texto libre o categoría (flujo pre-LLM, usado cuando BOT_MODE != catalog)
 const businesses = require('../../db/models/businesses');
 const conversations = require('../../db/models/conversations');
 const sender = require('../../sender');

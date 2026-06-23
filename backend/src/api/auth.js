@@ -1,3 +1,4 @@
+// auth.js — Helpers de JWT: verificación de tokens admin/negocio y login con bcrypt para ambos roles
 const bcrypt = require('bcryptjs');
 const db = require('../db');
 

@@ -1,3 +1,4 @@
+// state-machine.js — Ciclo de vida del pedido: placeOrder(), transition(), assignRider() y tryNextRider() con notificaciones en cada cambio
 const ordersDb = require('../db/models/orders');
 const customersDb = require('../db/models/customers');
 const ridersDb = require('../db/models/riders');

@@ -1,3 +1,4 @@
+// address.js — Captura y validación de dirección de entrega: usa la guardada o solicita una nueva; verifica que esté dentro de la zona de cobertura
 const customers = require('../../db/models/customers');
 const businesses = require('../../db/models/businesses');
 const conversations = require('../../db/models/conversations');

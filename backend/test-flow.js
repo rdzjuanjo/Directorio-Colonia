@@ -1,3 +1,4 @@
+// test-flow.js — Script de prueba básico del flujo de pedido end-to-end sin WhatsApp real
 require('dotenv').config();
 
 // ─── Mock sender ──────────────────────────────────────────────────────────────

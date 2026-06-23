@@ -1,3 +1,4 @@
+// menu.js — Modelo de menú: categorías e ítems con fotos; helpers de ownership categoryBelongsTo() e itemBelongsTo() para seguridad
 const db = require('../index');
 
 module.exports = {

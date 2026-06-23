@@ -1,3 +1,4 @@
+// analyticsHelper.js — Lógica de analíticas compartida entre el panel admin y el de negocio; el panel de negocio filtra por business_id
 const db = require('../db');
 
 async function analyticsQuery(from, to, businessId = null) {

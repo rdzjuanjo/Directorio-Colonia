@@ -1,3 +1,4 @@
+// menu.js — Navegación del menú de un negocio: muestra categorías e ítems, permite agregar productos al carrito
 const menu = require('../../db/models/menu');
 const businesses = require('../../db/models/businesses');
 const conversations = require('../../db/models/conversations');

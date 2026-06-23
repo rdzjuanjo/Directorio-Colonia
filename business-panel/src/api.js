@@ -1,3 +1,4 @@
+// api.js — Cliente HTTP del panel de negocio: wrapper fetch con JWT, maneja errores HTTP y expone todos los calls a /api/business/*
 const BASE = '/api/business';
 
 function token() { return localStorage.getItem('biz_token'); }
