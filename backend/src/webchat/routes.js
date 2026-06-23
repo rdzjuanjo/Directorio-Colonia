@@ -2,6 +2,9 @@
 
 const { handleUpdate } = require('../bot/fsm');
 const sessions = require('./sessions');
+const customersDb = require('../db/models/customers');
+const conversationsDb = require('../db/models/conversations');
+const { showCatalogMenu } = require('../bot/handlers/catalogSearch');
 
 let _msgId = 0;
 
@@ -416,7 +419,7 @@ async function webchatRoutes(fastify) {
     reply.type('text/html; charset=utf-8').send(HTML);
   });
 
-  fastify.get('/webchat/stream/:sessionId', (req, reply) => {
+  fastify.get('/webchat/stream/:sessionId', async (req, reply) => {
     const chatId = 'webchat:' + req.params.sessionId;
     reply.hijack();
     reply.raw.writeHead(200, {
@@ -442,8 +445,20 @@ async function webchatRoutes(fastify) {
     req.raw.on('close', () => {
       clearInterval(ka);
       emitter.removeListener('message', send);
-      sessions.delete(chatId);
+      // Solo borra si el emitter sigue siendo el nuestro (evita borrar el de una reconexión más nueva)
+      sessions.deleteIfMatch(chatId, emitter);
     });
+
+    // Usuario conocido: resetear conversación y mostrar menú fresco
+    try {
+      const customer = await customersDb.findByWhatsappId(chatId);
+      if (customer) {
+        await conversationsDb.set(chatId, 'catalog_search', [], {});
+        await showCatalogMenu(chatId, customer.name);
+      }
+    } catch (e) {
+      console.error('[webchat] greeting error on reconnect:', e.message);
+    }
   });
 
   fastify.post('/webchat/message/:sessionId', async (req, reply) => {

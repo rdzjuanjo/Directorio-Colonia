@@ -13,7 +13,10 @@ module.exports = {
   get(chatId) {
     return sessions.get(chatId) ?? null;
   },
-  delete(chatId) {
-    sessions.delete(chatId);
+  // Solo borra si el emitter sigue siendo el que pidió el delete (evita race condition en recarga)
+  deleteIfMatch(chatId, emitter) {
+    if (sessions.get(chatId) === emitter) {
+      sessions.delete(chatId);
+    }
   },
 };

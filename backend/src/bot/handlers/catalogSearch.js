@@ -196,6 +196,7 @@ async function runLlmSearch(chatId, query) {
 }
 
 module.exports = {
+  showCatalogMenu,
   async handle({ chatId, text, callbackData, conv, customer }) {
     const ctx = conv.context_json || {};
 
