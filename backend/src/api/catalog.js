@@ -76,6 +76,7 @@ async function catalogRoutes(fastify) {
 window._BIZ=${JSON.stringify(mapped)};
 </script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/overlapping-marker-spiderfier-leaflet/dist/oms.min.js"></script>
 <script>
 (function(){
   var CENTER=[20.6422,-103.3122];
@@ -83,6 +84,14 @@ window._BIZ=${JSON.stringify(mapped)};
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
     attribution:'© OpenStreetMap contributors',maxZoom:19
   }).addTo(map);
+
+  var oms=new OverlappingMarkerSpiderfier(map,{
+    markersWontMove:true,
+    markersWontHide:true,
+    basicFormatEvents:true,
+    keepSpiderfied:true,
+    nearbyDistance:30,
+  });
 
   window._BIZ.forEach(function(b){
     var icon=L.divIcon({
@@ -93,7 +102,7 @@ window._BIZ=${JSON.stringify(mapped)};
     var contact=b.phone
       ?'<a class="btn-contact" href="https://wa.me/'+b.phone+'" target="_blank">💬 Contactar</a>'
       :'';
-    var popup='<div class="popup-wrap">'+
+    var popup=L.popup().setContent('<div class="popup-wrap">'+
       '<div class="popup-name">'+b.name+'</div>'+
       '<div class="popup-cat">'+b.category+'</div>'+
       addr+
@@ -101,8 +110,15 @@ window._BIZ=${JSON.stringify(mapped)};
       '<a class="btn-menu" href="'+b.catalogUrl+'" target="_blank">🍽 Ver menú</a>'+
       contact+
       '<span class="btn-order">🛒 Ordenar (próximamente)</span>'+
-      '</div></div>';
-    L.marker([b.lat,b.lng],{icon:icon}).bindPopup(popup).addTo(map);
+      '</div></div>');
+    var marker=L.marker([b.lat,b.lng],{icon:icon});
+    marker._popup=popup;
+    oms.addMarker(marker);
+    marker.addTo(map);
+  });
+
+  oms.addListener('click',function(marker){
+    marker._popup.setLatLng(marker.getLatLng()).openOn(map);
   });
 
   if(window._BIZ.length>1){
