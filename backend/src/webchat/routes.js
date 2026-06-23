@@ -184,7 +184,7 @@ const HTML = `<!DOCTYPE html>
       <div class="htitle">Bot de Colonia — Demo</div>
       <div id="conn-status">Conectando…</div>
     </div>
-    <button id="new-btn" onclick="location.reload()">↺ Nueva sesión</button>
+    <button id="new-btn" onclick="localStorage.removeItem('colonia_wcid'); location.reload()">↺ Nueva sesión</button>
   </div>
   <div id="messages"></div>
   <div id="input-area">
@@ -195,7 +195,12 @@ const HTML = `<!DOCTYPE html>
 </div>
 <script>
 (function () {
-  const sessionId = crypto.randomUUID();
+  const WCID_KEY = 'colonia_wcid';
+  let sessionId = localStorage.getItem(WCID_KEY);
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    localStorage.setItem(WCID_KEY, sessionId);
+  }
   const log = document.getElementById('messages');
   const input = document.getElementById('msg-input');
   const sendBtn = document.getElementById('send-btn');
