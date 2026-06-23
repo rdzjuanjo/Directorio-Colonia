@@ -19,15 +19,17 @@ async function findAndAssign(orderId, excludeRiderIds = []) {
   const orderFsm = require('./state-machine');
   await orderFsm.assignRider(orderId, nearest.id);
 
-  const db = require('../db');
-  const timeoutMin = parseInt(
-    await db('config').where({ key: 'rider_accept_timeout_minutes' }).first().then((r) => r.value || '3')
-  );
+  const { getConfig } = require('../utils/getConfig');
+  const timeoutMin = parseInt(await getConfig('rider_accept_timeout_minutes', '3'));
 
   setTimeout(async () => {
-    const current = await ordersDb.findById(orderId);
-    if (current?.status === 'rider_assigned' && current?.rider_id === nearest.id) {
-      await findAndAssign(orderId, [...excludeRiderIds, nearest.id]);
+    try {
+      const current = await ordersDb.findById(orderId);
+      if (current?.status === 'rider_assigned' && current?.rider_id === nearest.id) {
+        await findAndAssign(orderId, [...excludeRiderIds, nearest.id]);
+      }
+    } catch (e) {
+      console.error('[dispatcher] error en timeout de reasignación:', e);
     }
   }, timeoutMin * 60 * 1000);
 }

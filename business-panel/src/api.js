@@ -5,8 +5,10 @@ function headers() { return { 'Content-Type': 'application/json', Authorization:
 
 async function req(method, path, body) {
   const res = await fetch(`${BASE}${path}`, { method, headers: headers(), body: body ? JSON.stringify(body) : undefined });
-  if (res.status === 401) { localStorage.removeItem('biz_token'); window.location.href = '/login'; }
-  return res.json();
+  if (res.status === 401) { localStorage.removeItem('biz_token'); window.location.href = '/login'; return; }
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error || 'Error del servidor');
+  return data;
 }
 
 export const api = {

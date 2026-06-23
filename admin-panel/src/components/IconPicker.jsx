@@ -3,12 +3,13 @@ import { useEffect, useState } from 'react';
 export default function IconPicker({ value, category, onChange }) {
   const [icons, setIcons] = useState([]);
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     fetch('/icons')
       .then((r) => r.json())
       .then(setIcons)
-      .catch(() => {});
+      .catch(() => setError(true));
   }, []);
 
   // Resolve current icon: explicit value → category default → first icon
@@ -38,8 +39,8 @@ export default function IconPicker({ value, category, onChange }) {
           <span className="w-6 h-6 rounded-full bg-gray-200 inline-block" />
         )}
         <span className="flex-1 text-left text-gray-700">
-          {current?.label ?? 'Cargando…'}
-          {isDefault && (
+          {error ? <span className="text-red-500">Error al cargar íconos</span> : (current?.label ?? 'Cargando…')}
+          {!error && isDefault && (
             <span className="ml-1 text-xs text-gray-400">(por defecto)</span>
           )}
         </span>

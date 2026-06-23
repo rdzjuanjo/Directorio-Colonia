@@ -74,7 +74,10 @@ export default function Zone() {
             showPolygon(map, pts);
             map.fitBounds(L.polygon(pts).getBounds(), { padding: [40, 40] });
           }
-        } catch (_) {}
+        } catch (e) {
+          console.error('[Zone] delivery_zone inválido en config:', e);
+          setMsg('⚠️ La zona guardada tiene formato inválido. Redibujá para corregirla.');
+        }
       }
     });
 

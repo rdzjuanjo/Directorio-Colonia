@@ -20,6 +20,19 @@ module.exports = {
 
   findItemById: (id) => db('menu_items').where({ id }).first(),
 
+  categoryBelongsTo: async (categoryId, businessId) => {
+    const row = await db('menu_categories').where({ id: categoryId, business_id: businessId }).first();
+    return !!row;
+  },
+
+  itemBelongsTo: async (itemId, businessId) => {
+    const row = await db('menu_items')
+      .join('menu_categories', 'menu_items.category_id', 'menu_categories.id')
+      .where({ 'menu_items.id': itemId, 'menu_categories.business_id': businessId })
+      .first();
+    return !!row;
+  },
+
   createCategory: (data) => db('menu_categories').insert(data).returning('*').then((r) => r[0]),
   updateCategory: (id, data) => db('menu_categories').where({ id }).update(data).returning('*').then((r) => r[0]),
   deleteCategory: (id) => db('menu_categories').where({ id }).delete(),

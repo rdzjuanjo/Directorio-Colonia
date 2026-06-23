@@ -49,8 +49,9 @@ module.exports = {
       const order = await trx('orders').where({ id }).select('delivery_type').first();
       await trx('order_items').where({ order_id: id }).delete();
       await trx('order_items').insert(items.map((i) => ({ ...i, order_id: id })));
+      const { getConfig } = require('../../utils/getConfig');
       const deliveryFee = order?.delivery_type === 'pickup' ? 0
-        : await db('config').where({ key: 'delivery_fee' }).first().then((r) => parseFloat(r.value));
+        : parseFloat(await getConfig('delivery_fee', '0'));
       await trx('orders').where({ id }).update({ subtotal, total: subtotal + deliveryFee, updated_at: db.fn.now() });
     });
   },

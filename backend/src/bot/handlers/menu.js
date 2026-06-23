@@ -85,8 +85,8 @@ async function showCart(chatId, cart, ctx) {
     return;
   }
 
-  const db = require('../../db');
-  const deliveryFee = parseFloat(await db('config').where({ key: 'delivery_fee' }).first().then((r) => r.value));
+  const { getConfig } = require('../../utils/getConfig');
+  const deliveryFee = parseFloat(await getConfig('delivery_fee', '0'));
 
   let text = '🛒 <b>Tu carrito:</b>\n\n';
   for (const item of cart) {

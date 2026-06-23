@@ -65,13 +65,28 @@ async function businessRoutes(fastify) {
     // Menú — categorías
     f.get('/menu', async (req) => menuDb.getCategoriesWithItems(bizId(req)));
     f.post('/menu/categories', async (req) => menuDb.createCategory({ ...req.body, business_id: bizId(req) }));
-    f.put('/menu/categories/:id', async (req) => menuDb.updateCategory(req.params.id, req.body));
-    f.delete('/menu/categories/:id', async (req) => menuDb.deleteCategory(req.params.id));
+    f.put('/menu/categories/:id', async (req, reply) => {
+      if (!await menuDb.categoryBelongsTo(req.params.id, bizId(req))) return reply.code(403).send({ error: 'Forbidden' });
+      return menuDb.updateCategory(req.params.id, req.body);
+    });
+    f.delete('/menu/categories/:id', async (req, reply) => {
+      if (!await menuDb.categoryBelongsTo(req.params.id, bizId(req))) return reply.code(403).send({ error: 'Forbidden' });
+      return menuDb.deleteCategory(req.params.id);
+    });
 
     // Menú — productos
-    f.post('/menu/items', async (req) => menuDb.createItem(req.body));
-    f.put('/menu/items/:id', async (req) => menuDb.updateItem(req.params.id, req.body));
-    f.delete('/menu/items/:id', async (req) => menuDb.deleteItem(req.params.id));
+    f.post('/menu/items', async (req, reply) => {
+      if (!await menuDb.categoryBelongsTo(req.body.category_id, bizId(req))) return reply.code(403).send({ error: 'Forbidden' });
+      return menuDb.createItem({ ...req.body, business_id: undefined });
+    });
+    f.put('/menu/items/:id', async (req, reply) => {
+      if (!await menuDb.itemBelongsTo(req.params.id, bizId(req))) return reply.code(403).send({ error: 'Forbidden' });
+      return menuDb.updateItem(req.params.id, req.body);
+    });
+    f.delete('/menu/items/:id', async (req, reply) => {
+      if (!await menuDb.itemBelongsTo(req.params.id, bizId(req))) return reply.code(403).send({ error: 'Forbidden' });
+      return menuDb.deleteItem(req.params.id);
+    });
 
     // Subir foto de producto
     f.post('/menu/items/:id/photo', async (req, reply) => {

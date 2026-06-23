@@ -165,6 +165,28 @@ Knex + PostgreSQL. Knexfile at `src/db/knexfile.js`. Models are thin wrappers in
 | `dispatch:ex:{orderId}` | Set of rider IDs already offered this order (24h TTL) |
 | `watchdog:alerted:{orderId}:{status}` | Dedup flag for admin alerts (1-day TTL) |
 
+## Mandatory patterns
+
+### Reading config values
+Always use `src/utils/getConfig.js` — never query the `config` table directly:
+```js
+const { getConfig } = require('../utils/getConfig');
+const fee = parseFloat(await getConfig('delivery_fee', '0'));
+```
+Direct `.where({ key }).first().then((r) => r.value)` crashes if the seed hasn't run.
+
+### Changing order status
+Always call `orderFsm.transition(orderId, newStatus)` from `orders/state-machine.js`. Direct DB updates on `orders.status` bypass `notifier.js` and break the audit trail. The one intentional exception is `switch_to_pickup` in `handlers/orderActive.js`, which needs an atomic delivery_type + total recalculation — that comment explains why.
+
+### Business endpoint ownership
+Before mutating menu categories or items in `api/business.js`, call the ownership helpers in `db/models/menu.js`:
+- `menuDb.categoryBelongsTo(categoryId, bizId)` — returns bool
+- `menuDb.itemBelongsTo(itemId, bizId)` — returns bool
+Return 403 if false. Skipping this check lets one business overwrite another's menu.
+
+### Frontend API errors
+The `req()` helper in both `api.js` files now throws on non-OK responses (`!res.ok`). Callers must wrap mutations in try/catch and show the error to the user. Reads (GET) that fail silently are generally acceptable if they show an empty state.
+
 ## End-to-end test (`test-flow-wa.js`)
 
 `npm run test:wa` simulates a complete delivery order without WhatsApp. It patches `require.cache` to replace `src/sender.js` with a mock that prints to stdout and writes real button maps to Redis. The `reset()` function idempotently creates the test business, menu item, and rider if they don't exist. Run after any FSM or order-flow change to catch regressions.

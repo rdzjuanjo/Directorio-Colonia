@@ -35,6 +35,9 @@ async function handle({ chatId, text, callbackData, conv }) {
   }
 
   if (callbackData === 'switch_to_pickup') {
+    // Bypasa state-machine intencionalmente: el cambio a pickup mid-flight requiere
+    // actualizar delivery_type + recalcular total en una sola transacción atómica
+    // sin disparar las notificaciones normales del flujo de delivery.
     const db = require('../../db');
     await db('orders').where({ id: orderId }).update({
       delivery_type: 'pickup',

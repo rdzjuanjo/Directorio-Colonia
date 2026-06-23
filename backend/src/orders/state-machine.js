@@ -12,11 +12,9 @@ async function placeOrder(customerWhatsappId, cart, businessId, addressData, opt
   const isAtStore = paymentMethod === 'at_store';
 
   const customer = await customersDb.findByWhatsappId(customerWhatsappId);
-  const db = require('../db');
+  const { getConfig } = require('../utils/getConfig');
 
-  const deliveryFee = isPickup ? 0 : parseFloat(
-    await db('config').where({ key: 'delivery_fee' }).first().then((r) => r.value)
-  );
+  const deliveryFee = isPickup ? 0 : parseFloat(await getConfig('delivery_fee', '0'));
 
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const total = subtotal + deliveryFee;

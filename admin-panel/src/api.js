@@ -17,8 +17,11 @@ async function req(method, path, body) {
   if (res.status === 401) {
     localStorage.removeItem('admin_token');
     window.location.href = '/login';
+    return;
   }
-  return res.json();
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error || 'Error del servidor');
+  return data;
 }
 
 export const api = {
