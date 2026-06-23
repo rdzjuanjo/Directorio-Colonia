@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this project is
 
-A neighborhood food-delivery platform for a closed community ("colonia"). Customers order via **WhatsApp**, businesses accept/manage orders through a web panel, and admins oversee everything through a separate panel. Riders are dispatched automatically and interact via WhatsApp.
+**Tienda Esquina** (`tiendaesquina.mx`) — a neighborhood commerce directory and food-delivery platform. Customers discover local businesses and order via **WhatsApp**, businesses manage orders through a web panel, and admins oversee everything through a separate panel. Riders are dispatched automatically and interact via WhatsApp.
 
 ## Repository layout
 

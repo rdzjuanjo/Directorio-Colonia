@@ -1,3 +1,4 @@
+// routes.js — Demo webchat: sirve la UI de chat, SSE para mensajes en tiempo real y gestiona la sesión por customerId en localStorage
 'use strict';
 
 const { handleUpdate } = require('../bot/fsm');
@@ -15,7 +16,7 @@ const HTML = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bot de Colonia — Demo</title>
+  <title>Tienda Esquina — Demo</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -184,10 +185,10 @@ const HTML = `<!DOCTYPE html>
   <div id="header">
     <div class="avatar">🤖</div>
     <div class="hinfo">
-      <div class="htitle">Bot de Colonia — Demo</div>
+      <div class="htitle">Tienda Esquina — Demo</div>
       <div id="conn-status">Conectando…</div>
     </div>
-    <button id="new-btn" onclick="localStorage.removeItem('colonia_cid'); location.reload()">↺ Nueva sesión</button>
+    <button id="new-btn" onclick="localStorage.removeItem('te_cid'); location.reload()">↺ Nueva sesión</button>
   </div>
   <div id="messages"></div>
   <div id="input-area">
@@ -199,7 +200,7 @@ const HTML = `<!DOCTYPE html>
 <script>
 (function () {
   // customerId: identidad permanente del usuario (sobrevive recargas)
-  const CID_KEY = 'colonia_cid';
+  const CID_KEY = 'te_cid';
   let customerId = localStorage.getItem(CID_KEY);
   if (!customerId) {
     customerId = crypto.randomUUID();

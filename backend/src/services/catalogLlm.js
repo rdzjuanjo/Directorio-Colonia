@@ -1,3 +1,4 @@
+// catalogLlm.js — Clasificación de intención y búsqueda semántica del catálogo usando DeepSeek via tool calling; cachea el snapshot 5 min en Redis
 'use strict';
 
 const OpenAI = require('openai');
@@ -47,13 +48,13 @@ async function classifyAndSearch(query) {
   const snapshot = await buildSnapshot();
 
   const systemPrompt =
-    'Eres el asistente del directorio de negocios de "La Colonia".\n' +
+    'Eres el asistente del directorio de negocios de "Tienda Esquina".\n' +
     'Clasifica el mensaje del usuario en una de estas intenciones y actúa según corresponda:\n\n' +
     '• "greeting": es un saludo puro (hola, buenas, hey, qué tal, etc.).\n' +
     '  → Responde con un saludo amistoso en response_message. Deja businesses:[].\n\n' +
     '• "question": pregunta sobre el funcionamiento de la plataforma, costos, envíos, pago, horarios, qué negocios hay, cómo pedir, etc.\n' +
     '  → Responde la pregunta en response_message usando la información del CATALOG y la siguiente info de plataforma:\n' +
-    '    - Directorio gratuito de negocios locales de la colonia\n' +
+    '    - Directorio gratuito de negocios locales en tiendaesquina.mx\n' +
     '    - Los pedidos se hacen por WhatsApp\n' +
     '    - Pago por transferencia bancaria directamente al negocio\n' +
     '    - Costo de envío fijo por entrega a domicilio\n' +
@@ -90,8 +91,8 @@ async function classifyAndSearch(query) {
               description: 'Intención del mensaje del usuario',
             },
             response_message: {
-              type: ['string', 'null'],
-              description: 'Respuesta para saludo o pregunta. Null para búsquedas.',
+              type: 'string',
+              description: 'Respuesta para saludo o pregunta. Vacío para búsquedas.',
             },
             businesses: {
               type: 'array',
@@ -106,11 +107,11 @@ async function classifyAndSearch(query) {
               },
             },
             message: {
-              type: ['string', 'null'],
+              type: 'string',
               description: 'Mensaje introductorio para mostrar antes de la lista de negocios',
             },
             no_results_message: {
-              type: ['string', 'null'],
+              type: 'string',
               description: 'Mensaje cuando no hay negocios que coincidan',
             },
           },

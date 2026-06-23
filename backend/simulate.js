@@ -1,3 +1,4 @@
+// simulate.js — Simulador interactivo de consola: prueba el bot sin WhatsApp, cambiando entre personas (cliente, negocio, repartidor)
 require('dotenv').config();
 const readline = require('readline');
 const path = require('path');
@@ -136,7 +137,7 @@ function prompt() {
   rl.prompt();
 }
 
-console.log('\n\x1b[1m🤖  Simulador — Gestor de Colonia\x1b[0m');
+console.log('\n\x1b[1m🤖  Simulador — Tienda Esquina\x1b[0m');
 console.log('Personas:', Object.entries(PERSONAS).map(([k, v]) => `\x1b[33m${k}\x1b[0m(${v})`).join('  '));
 console.log('');
 console.log('  /switch <persona>           cambiar quién habla');

@@ -1,3 +1,4 @@
+// onboarding.js — Registro de nuevo cliente: captura nombre, detecta preguntas frecuentes y responde FAQ antes de solicitar ubicación
 'use strict';
 
 const customers = require('../../db/models/customers');
@@ -5,7 +6,7 @@ const conversations = require('../../db/models/conversations');
 const sender = require('../../sender');
 
 const WELCOME_TEXT =
-  '👋 ¡Bienvenido al directorio de negocios de <b>La Colonia</b>!\n\n' +
+  '👋 ¡Bienvenido a <b>Tienda Esquina</b>!\n\n' +
   'Aquí puedes encontrar todos los negocios de nuestra comunidad:\n' +
   '🍕 Comida preparada · 🛒 Abarrotes · 🥩 Carnicerías\n' +
   '🥖 Panaderías · 💊 Farmacias · 🏪 Misceláneas\n\n' +
@@ -42,7 +43,7 @@ const FAQ = [
   {
     keywords: ['negocios', 'negocio', 'tiendas', 'locales', 'hay', 'tienen', 'disponible', 'catálogo', 'catalogo'],
     answer:
-      '🏪 En el directorio encontrarás negocios locales de la colonia: comida preparada, abarrotes, carnicerías, panaderías, farmacias y más.\n\n' +
+      '🏪 En el directorio encontrarás negocios locales: comida preparada, abarrotes, carnicerías, panaderías, farmacias y más.\n\n' +
       'Escribe el nombre o tipo de lo que buscas y te muestro las opciones disponibles.',
   },
   {
@@ -92,7 +93,7 @@ async function handle({ chatId, text, location, conv }) {
     if (isQuestion(text)) {
       const answer = findFaqAnswer(text);
       const response = answer
-        || '¡Buena pregunta! El directorio te permite encontrar negocios de la colonia, ver sus menús y hacer pedidos desde WhatsApp.\n\nSi tienes más dudas, escríbelas aquí.';
+        || '¡Buena pregunta! Tienda Esquina te permite encontrar negocios locales, ver sus menús y hacer pedidos desde WhatsApp.\n\nSi tienes más dudas, escríbelas aquí.';
       await sender.sendText(chatId, response + '\n\n¿Y tú, cómo te llamas? 😊');
       return;
     }

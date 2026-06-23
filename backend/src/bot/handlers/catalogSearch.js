@@ -1,3 +1,4 @@
+// catalogSearch.js — Búsqueda del catálogo con clasificación LLM (saludo/pregunta/búsqueda de negocio) via DeepSeek
 'use strict';
 
 const sender = require('../../sender');
@@ -143,11 +144,8 @@ async function runLlmSearch(chatId, query, customerName) {
     result = await searchCatalog(query);
   } catch (err) {
     console.error('[catalogSearch] LLM error:', err.message);
-    await sender.sendButtons(
-      chatId,
-      'Hubo un error al procesar tu mensaje. Por favor intenta de nuevo.',
-      [{ label: '⬅ Ver categorías', data: 'back_to_categories' }]
-    );
+    await showCatalogMenu(chatId, customerName);
+    await conversations.set(chatId, 'catalog_search', [], {});
     return;
   }
 
@@ -282,7 +280,7 @@ module.exports = {
     if (callbackData === 'show_directory') {
       await sender.sendText(
         chatId,
-        `Aquí está el directorio de todos los negocios de la colonia:\n${PUBLIC_URL}/directorio`
+        `Aquí está el directorio completo de Tienda Esquina:\n${PUBLIC_URL}/directorio`
       );
       return;
     }

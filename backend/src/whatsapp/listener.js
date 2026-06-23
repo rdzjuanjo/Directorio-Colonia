@@ -1,3 +1,4 @@
+// listener.js — Inicializa el cliente WhatsApp (whatsapp-web.js/Puppeteer), normaliza mensajes entrantes al formato del FSM y resuelve botones numerados
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 
@@ -97,7 +98,9 @@ function startWhatsApp() {
     await handleUpdate(buildMessage(chatId, text)).catch(console.error);
   });
 
-  client.initialize();
+  client.initialize().catch((err) => {
+    console.error('[WhatsApp] Error al inicializar (el servidor sigue corriendo):', err.message);
+  });
   return client;
 }
 

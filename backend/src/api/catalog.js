@@ -1,3 +1,4 @@
+// catalog.js — Páginas HTML públicas: /catalog/:id (menú), /directorio (listado), /mapa (Leaflet con pins) y /icons
 const businessesDb = require('../db/models/businesses');
 const menuDb = require('../db/models/menu');
 const { getRegistry, getIcon } = require('../utils/businessIcons');
@@ -49,7 +50,7 @@ async function catalogRoutes(fastify) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Mapa de negocios — La Colonia</title>
+<title>Mapa de negocios — Tienda Esquina</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
@@ -70,7 +71,7 @@ async function catalogRoutes(fastify) {
 </style>
 </head>
 <body>
-<header>🗺️ Negocios de la colonia <span style="font-weight:400;opacity:.7;font-size:13px">${mapped.length} en el mapa</span></header>
+<header>🗺️ Tienda Esquina <span style="font-weight:400;opacity:.7;font-size:13px">${mapped.length} negocios</span></header>
 <div id="map"></div>
 <script>
 window._BIZ=${JSON.stringify(mapped)};
@@ -180,7 +181,7 @@ window._BIZ=${JSON.stringify(mapped)};
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Directorio de negocios — La Colonia</title>
+<title>Directorio de negocios — Tienda Esquina</title>
 <style>
   body{font-family:system-ui,sans-serif;max-width:640px;margin:0 auto;padding:16px;background:#f9f9f9}
   h1{margin:0 0 4px}
@@ -188,7 +189,7 @@ window._BIZ=${JSON.stringify(mapped)};
 </style>
 </head>
 <body>
-<h1>🏘️ Directorio de la colonia</h1>
+<h1>🏪 Tienda Esquina</h1>
 <p class="subtitle">Todos los negocios locales en un solo lugar</p>
 ${categorySections || '<p style="color:#999">No hay negocios disponibles por ahora.</p>'}
 </body>
