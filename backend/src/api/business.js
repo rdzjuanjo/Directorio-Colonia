@@ -1,3 +1,4 @@
+// business.js — Rutas protegidas de negocio: menú (categorías/ítems/fotos), horarios, pedidos y recuperación de contraseña
 const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
@@ -92,7 +93,9 @@ async function businessRoutes(fastify) {
     f.post('/menu/items/:id/photo', async (req, reply) => {
       const data = await req.file();
       if (!data) return reply.code(400).send({ error: 'No file' });
-      const ext = path.extname(data.filename) || '.jpg';
+      const ALLOWED_EXT = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp']);
+      const ext = path.extname(data.filename).toLowerCase();
+      if (!ALLOWED_EXT.has(ext)) return reply.code(400).send({ error: 'Tipo de archivo no permitido. Use JPG, PNG, GIF o WebP.' });
       const filename = `item_${req.params.id}_${Date.now()}${ext}`;
       const uploadPath = path.join(__dirname, '../../uploads', filename);
       const buffer = await data.toBuffer();

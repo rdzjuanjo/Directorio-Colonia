@@ -1,3 +1,4 @@
+// webchat-sender.js — Sender para el webchat: escapa HTML, convierte markdown a HTML y emite vía SSE al sessionId activo en AsyncLocalStorage
 'use strict';
 
 const sessions = require('./sessions');
@@ -13,13 +14,22 @@ function emit(chatId, payload) {
   emitter.emit('message', payload);
 }
 
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function toHtml(text) {
   if (!text) return '';
-  return text
+  return escHtml(text)
     .replace(/\*([^*\n]+)\*/g, '<b>$1</b>')
     .replace(/_([^_\n]+)_/g, '<i>$1</i>')
     .replace(/`([^`\n]+)`/g, '<code>$1</code>')
-    .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')
+    .replace(/(https?:\/\/[^\s&lt;&gt;]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>')
     .replace(/\n/g, '<br>');
 }
 
