@@ -126,6 +126,30 @@ async function adminRoutes(fastify) {
       };
     });
 
+    // Clientes / usuarios del bot
+    f.get('/customers', async () => {
+      const rows = await db('customers')
+        .select('id', 'whatsapp_id', 'name', 'banned', 'created_at')
+        .orderBy('created_at', 'desc');
+      return rows.map((r) => ({ ...r, phone: r.whatsapp_id?.split('@')[0] || r.whatsapp_id }));
+    });
+
+    f.get('/customers/stats', async (req, reply) => {
+      const { from, to } = req.query;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+        return reply.code(400).send({ error: 'from y to deben tener formato YYYY-MM-DD' });
+      }
+      const [total, byDay] = await Promise.all([
+        db('customers').count('* as count').first(),
+        db('customers')
+          .whereRaw('created_at::date BETWEEN ? AND ?', [from, to])
+          .select(db.raw('DATE(created_at)::text AS date'), db.raw('COUNT(*)::int AS count'))
+          .groupBy(db.raw('DATE(created_at)'))
+          .orderBy('date'),
+      ]);
+      return { total: parseInt(total.count), byDay };
+    });
+
     // Analíticas de pedidos
     f.get('/analytics', async (req, reply) => {
       const { from, to } = req.query;

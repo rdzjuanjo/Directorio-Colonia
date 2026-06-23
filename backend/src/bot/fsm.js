@@ -48,9 +48,14 @@ async function handleUpdate(update) {
   let conv = await conversations.get(chatId);
 
   if (!conv) {
-    const initialState = customer ? 'idle' : 'onboarding_name';
-    await conversations.set(chatId, initialState, [], {});
-    conv = { state: initialState, cart_json: [], context_json: {} };
+    if (!customer) {
+      // Usuario nuevo: enviar bienvenida y esperar siguiente mensaje
+      await conversations.set(chatId, 'onboarding_name', [], {});
+      await require('./handlers/onboarding').sendWelcome(chatId);
+      return;
+    }
+    await conversations.set(chatId, 'idle', [], {});
+    conv = { state: 'idle', cart_json: [], context_json: {} };
   }
 
   // Repartidores y negocios tienen handlers especiales

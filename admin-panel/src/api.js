@@ -48,4 +48,6 @@ export const api = {
   updateConfig: (key, value) => req('PUT', `/config/${key}`, { value }),
   analytics: (from, to) => req('GET', `/analytics?from=${from}&to=${to}`),
   catalogAnalytics: (from, to) => req('GET', `/catalog-analytics?from=${from}&to=${to}`),
+  customers: () => req('GET', '/customers'),
+  customerStats: (from, to) => req('GET', `/customers/stats?from=${from}&to=${to}`),
 };
