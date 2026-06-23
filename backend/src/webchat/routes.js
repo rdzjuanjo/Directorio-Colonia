@@ -2,6 +2,7 @@
 
 const { handleUpdate } = require('../bot/fsm');
 const sessions = require('./sessions');
+const sessionStore = require('./asyncSessionStore');
 const customersDb = require('../db/models/customers');
 const conversationsDb = require('../db/models/conversations');
 
@@ -186,7 +187,7 @@ const HTML = `<!DOCTYPE html>
       <div class="htitle">Bot de Colonia — Demo</div>
       <div id="conn-status">Conectando…</div>
     </div>
-    <button id="new-btn" onclick="localStorage.removeItem('colonia_wcid'); location.reload()">↺ Nueva sesión</button>
+    <button id="new-btn" onclick="localStorage.removeItem('colonia_cid'); location.reload()">↺ Nueva sesión</button>
   </div>
   <div id="messages"></div>
   <div id="input-area">
@@ -197,12 +198,16 @@ const HTML = `<!DOCTYPE html>
 </div>
 <script>
 (function () {
-  const WCID_KEY = 'colonia_wcid';
-  let sessionId = localStorage.getItem(WCID_KEY);
-  if (!sessionId) {
-    sessionId = crypto.randomUUID();
-    localStorage.setItem(WCID_KEY, sessionId);
+  // customerId: identidad permanente del usuario (sobrevive recargas)
+  const CID_KEY = 'colonia_cid';
+  let customerId = localStorage.getItem(CID_KEY);
+  if (!customerId) {
+    customerId = crypto.randomUUID();
+    localStorage.setItem(CID_KEY, customerId);
   }
+  // sessionId: nuevo en cada carga de página (no se guarda en localStorage)
+  const sessionId = crypto.randomUUID();
+
   const log = document.getElementById('messages');
   const input = document.getElementById('msg-input');
   const sendBtn = document.getElementById('send-btn');
@@ -210,7 +215,7 @@ const HTML = `<!DOCTYPE html>
   const connStatus = document.getElementById('conn-status');
 
   // ── SSE connection ──────────────────────────────────────────────────────
-  const es = new EventSource('/webchat/stream/' + sessionId);
+  const es = new EventSource('/webchat/stream/' + sessionId + '?cid=' + customerId);
 
   es.onmessage = (e) => {
     const msg = JSON.parse(e.data);
@@ -368,7 +373,7 @@ const HTML = `<!DOCTYPE html>
       await fetch('/webchat/message/' + sessionId, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ ...body, _cid: customerId }),
       });
     } catch (err) {
       addInfo('Error de red: ' + err.message);
@@ -419,7 +424,13 @@ async function webchatRoutes(fastify) {
   });
 
   fastify.get('/webchat/stream/:sessionId', async (req, reply) => {
-    const chatId = 'webchat:' + req.params.sessionId;
+    const customerId = req.query.cid;
+    if (!customerId || !/^[0-9a-f-]{36}$/i.test(customerId)) {
+      return reply.code(400).send('Invalid cid');
+    }
+    const chatId = 'webchat:' + customerId;
+    const sessionId = req.params.sessionId;
+
     reply.hijack();
     reply.raw.writeHead(200, {
       'Content-Type': 'text/event-stream; charset=utf-8',
@@ -428,13 +439,13 @@ async function webchatRoutes(fastify) {
       'X-Accel-Buffering': 'no',
     });
 
-    const emitter = sessions.create(chatId);
+    const emitter = sessions.register(chatId, sessionId);
 
     function send(payload) {
       try { reply.raw.write('data: ' + JSON.stringify(payload) + '\n\n'); } catch (_) {}
     }
 
-    send({ type: 'connected', sessionId: req.params.sessionId });
+    send({ type: 'connected', sessionId });
     emitter.on('message', send);
 
     const ka = setInterval(() => {
@@ -444,24 +455,24 @@ async function webchatRoutes(fastify) {
     req.raw.on('close', () => {
       clearInterval(ka);
       emitter.removeListener('message', send);
-      // Solo borra si el emitter sigue siendo el nuestro (evita borrar el de una reconexión más nueva)
-      sessions.deleteIfMatch(chatId, emitter);
+      sessions.deleteSession(chatId, sessionId);
     });
 
-    // Usuario conocido: resetear conversación a estado limpio sin enviar nada
-    // El bot esperará a que el usuario escriba primero
+    // Resetear conversación a estado limpio — el bot espera que el usuario escriba
     try {
       const customer = await customersDb.findByWhatsappId(chatId);
       if (customer) {
         await conversationsDb.set(chatId, 'catalog_search', [], {});
       }
     } catch (e) {
-      console.error('[webchat] session reset error on reconnect:', e.message);
+      console.error('[webchat] session reset error:', e.message);
     }
   });
 
   fastify.post('/webchat/message/:sessionId', async (req, reply) => {
-    const chatId = 'webchat:' + req.params.sessionId;
+    const sessionId = req.params.sessionId;
+    const chatId = sessions.getChatId(sessionId);
+    if (!chatId) return reply.code(410).send({ error: 'Session expired' });
     const body = req.body;
     const now = Math.floor(Date.now() / 1000);
     const id = ++_msgId;
@@ -499,7 +510,7 @@ async function webchatRoutes(fastify) {
     }
 
     try {
-      await handleUpdate(update);
+      await sessionStore.run(sessionId, () => handleUpdate(update));
     } catch (err) {
       console.error('[webchat] handleUpdate error:', err);
       return reply.status(500).send({ error: err.message });

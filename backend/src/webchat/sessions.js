@@ -1,22 +1,35 @@
 'use strict';
 
 const { EventEmitter } = require('events');
-const sessions = new Map();
+
+const bySession = new Map();     // sessionId → emitter
+const chatToSession = new Map(); // chatId → sessionId activo
+const sessionToChat = new Map(); // sessionId → chatId
 
 module.exports = {
-  create(chatId) {
+  register(chatId, sessionId) {
     const emitter = new EventEmitter();
     emitter.setMaxListeners(5);
-    sessions.set(chatId, emitter);
+    bySession.set(sessionId, emitter);
+    chatToSession.set(chatId, sessionId);
+    sessionToChat.set(sessionId, chatId);
     return emitter;
   },
-  get(chatId) {
-    return sessions.get(chatId) ?? null;
+
+  getBySession(sessionId) {
+    return bySession.get(sessionId) ?? null;
   },
-  // Solo borra si el emitter sigue siendo el que pidió el delete (evita race condition en recarga)
-  deleteIfMatch(chatId, emitter) {
-    if (sessions.get(chatId) === emitter) {
-      sessions.delete(chatId);
+
+  getChatId(sessionId) {
+    return sessionToChat.get(sessionId) ?? null;
+  },
+
+  deleteSession(chatId, sessionId) {
+    // Solo borra el mapeo chatId→sessionId si sigue apuntando a ESTA sesión
+    if (chatToSession.get(chatId) === sessionId) {
+      chatToSession.delete(chatId);
     }
+    bySession.delete(sessionId);
+    sessionToChat.delete(sessionId);
   },
 };

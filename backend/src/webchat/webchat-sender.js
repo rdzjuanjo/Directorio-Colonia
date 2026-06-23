@@ -1,14 +1,18 @@
 'use strict';
 
 const sessions = require('./sessions');
+const sessionStore = require('./asyncSessionStore');
 
+// Emite solo a la sesión que inició el request actual (capturada en AsyncLocalStorage).
+// Si esa sesión ya cerró (el usuario recargó), el mensaje se descarta silenciosamente.
 function emit(chatId, payload) {
-  const emitter = sessions.get(chatId);
+  const sessionId = sessionStore.getStore();
+  if (!sessionId) return;
+  const emitter = sessions.getBySession(sessionId);
   if (!emitter) return;
   emitter.emit('message', payload);
 }
 
-// Convierte texto plano con markdown WhatsApp (*bold*, _italic_) y \n a HTML del browser
 function toHtml(text) {
   if (!text) return '';
   return text

@@ -135,7 +135,7 @@ async function showBusinessDetail(chatId, bizId, ctx) {
   return true;
 }
 
-async function runLlmSearch(chatId, query) {
+async function runLlmSearch(chatId, query, customerName) {
   await sender.sendText(chatId, '🔍 Buscando...').catch(() => {});
 
   let result;
@@ -145,12 +145,26 @@ async function runLlmSearch(chatId, query) {
     console.error('[catalogSearch] LLM error:', err.message);
     await sender.sendButtons(
       chatId,
-      'Hubo un error al buscar. Por favor intenta de nuevo.',
+      'Hubo un error al procesar tu mensaje. Por favor intenta de nuevo.',
       [{ label: '⬅ Ver categorías', data: 'back_to_categories' }]
     );
     return;
   }
 
+  const intent = result.intent || 'search';
+
+  // Saludo o pregunta → responder y mostrar el menú
+  if (intent === 'greeting' || intent === 'question') {
+    const response = (result.response_message && result.response_message !== 'null')
+      ? result.response_message
+      : (intent === 'greeting' ? '¡Hola! 👋 ¿En qué te puedo ayudar?' : 'Con gusto te ayudo. ¿Qué estás buscando?');
+    await sender.sendText(chatId, response);
+    await showCatalogMenu(chatId, customerName);
+    await conversations.set(chatId, 'catalog_search', [], {});
+    return;
+  }
+
+  // Búsqueda → mostrar negocios
   if (!result.businesses || result.businesses.length === 0) {
     const rawMsg = result.no_results_message || result.message;
     const msg = (rawMsg && rawMsg !== 'null')
@@ -280,11 +294,11 @@ module.exports = {
       return;
     }
 
-    // ── Texto libre → búsqueda LLM ────────────────────────────────────────
+    // ── Texto libre → clasificación LLM (saludo / pregunta / búsqueda) ──────
     const query = (text || '').trim();
     if (query) {
       await logEvent('search', chatId, { queryText: query });
-      await runLlmSearch(chatId, query);
+      await runLlmSearch(chatId, query, customer?.name);
       return;
     }
 

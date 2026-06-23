@@ -43,17 +43,29 @@ async function buildSnapshot() {
   return snapshot;
 }
 
-async function searchCatalog(query) {
+async function classifyAndSearch(query) {
   const snapshot = await buildSnapshot();
 
   const systemPrompt =
-    'Eres el asistente del directorio de negocios de "la colonia".\n' +
-    'Ayudas a clientes a encontrar productos y negocios locales.\n\n' +
-    'Reglas:\n' +
-    '- Solo devuelve negocios cuyo "id" aparezca en CATALOG. Nunca inventes nombres ni IDs.\n' +
-    '- "highlight" es una frase corta (≤15 palabras) explicando la coincidencia.\n' +
-    '- Responde en el mismo idioma que el usuario.\n' +
-    '- Si no hay coincidencias, deja businesses:[] y rellena no_results_message.\n\n' +
+    'Eres el asistente del directorio de negocios de "La Colonia".\n' +
+    'Clasifica el mensaje del usuario en una de estas intenciones y actúa según corresponda:\n\n' +
+    '• "greeting": es un saludo puro (hola, buenas, hey, qué tal, etc.).\n' +
+    '  → Responde con un saludo amistoso en response_message. Deja businesses:[].\n\n' +
+    '• "question": pregunta sobre el funcionamiento de la plataforma, costos, envíos, pago, horarios, qué negocios hay, cómo pedir, etc.\n' +
+    '  → Responde la pregunta en response_message usando la información del CATALOG y la siguiente info de plataforma:\n' +
+    '    - Directorio gratuito de negocios locales de la colonia\n' +
+    '    - Los pedidos se hacen por WhatsApp\n' +
+    '    - Pago por transferencia bancaria directamente al negocio\n' +
+    '    - Costo de envío fijo por entrega a domicilio\n' +
+    '    - Algunos negocios ofrecen retiro en tienda (sin costo de envío)\n' +
+    '    - Categorías disponibles: comida preparada, abarrotes, carnicería, panadería, farmacia, miscelánea\n' +
+    '  Deja businesses:[].\n\n' +
+    '• "search": busca un negocio o producto específico (tacos, pizza, farmacia, medicamento, etc.).\n' +
+    '  → Llena businesses[] con los negocios del CATALOG que coincidan.\n' +
+    '    - Solo devuelve IDs que existan en CATALOG. Nunca inventes.\n' +
+    '    - "highlight" es una frase corta (≤15 palabras) explicando la coincidencia.\n' +
+    '    - Si no hay coincidencias, deja businesses:[] y usa no_results_message.\n\n' +
+    'Responde siempre en el mismo idioma que el usuario.\n\n' +
     'CATALOG:\n' +
     JSON.stringify(snapshot, null, 2);
 
@@ -67,14 +79,23 @@ async function searchCatalog(query) {
     tools: [{
       type: 'function',
       function: {
-        name: 'return_results',
-        description: 'Devuelve los resultados de búsqueda del catálogo',
+        name: 'handle_message',
+        description: 'Clasifica la intención y devuelve la respuesta apropiada',
         parameters: {
           type: 'object',
           properties: {
-            message: { type: 'string' },
+            intent: {
+              type: 'string',
+              enum: ['greeting', 'question', 'search'],
+              description: 'Intención del mensaje del usuario',
+            },
+            response_message: {
+              type: ['string', 'null'],
+              description: 'Respuesta para saludo o pregunta. Null para búsquedas.',
+            },
             businesses: {
               type: 'array',
+              description: 'Negocios encontrados (solo para intent=search)',
               items: {
                 type: 'object',
                 properties: {
@@ -84,13 +105,20 @@ async function searchCatalog(query) {
                 required: ['id', 'highlight'],
               },
             },
-            no_results_message: { type: ['string', 'null'] },
+            message: {
+              type: ['string', 'null'],
+              description: 'Mensaje introductorio para mostrar antes de la lista de negocios',
+            },
+            no_results_message: {
+              type: ['string', 'null'],
+              description: 'Mensaje cuando no hay negocios que coincidan',
+            },
           },
-          required: ['message', 'businesses', 'no_results_message'],
+          required: ['intent', 'businesses'],
         },
       },
     }],
-    tool_choice: { type: 'function', function: { name: 'return_results' } },
+    tool_choice: { type: 'function', function: { name: 'handle_message' } },
   });
 
   const toolCall = response.choices[0]?.message?.tool_calls?.[0];
@@ -98,4 +126,9 @@ async function searchCatalog(query) {
   return JSON.parse(toolCall.function.arguments);
 }
 
-module.exports = { searchCatalog };
+// Mantener compatibilidad con cualquier llamada directa a searchCatalog
+async function searchCatalog(query) {
+  return classifyAndSearch(query);
+}
+
+module.exports = { searchCatalog, classifyAndSearch };
