@@ -1,1 +1,29 @@
+/* index.css — Tokens de diseño Tailwind 4 (paleta verde admin, fondo cálido) y fuente Outfit como base del panel admin */
 @import "tailwindcss";
+
+@theme {
+  --font-sans: 'Outfit', system-ui, sans-serif;
+
+  --color-te-bg: #F1EEE8;
+  --color-te-surface: #FDFBF8;
+  --color-te-border: #E3DDD4;
+  --color-te-text: #1C1917;
+  --color-te-muted: #78716C;
+
+  --color-te-green: #1A2B1A;
+  --color-te-green-hover: #243524;
+  --color-te-green-active: #2E452E;
+  --color-te-green-text: #C8DFC8;
+
+  --color-te-amber: #D97706;
+  --color-te-amber-light: #FEF3C7;
+}
+
+@layer base {
+  body {
+    background-color: #F1EEE8;
+    color: #1C1917;
+    font-family: 'Outfit', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}

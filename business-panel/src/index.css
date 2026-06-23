@@ -1,1 +1,29 @@
+/* index.css — Tokens de diseño Tailwind 4 (paleta espresso negocio, fondo cálido) y fuente Outfit como base del panel de negocio */
 @import "tailwindcss";
+
+@theme {
+  --font-sans: 'Outfit', system-ui, sans-serif;
+
+  --color-te-bg: #F1EEE8;
+  --color-te-surface: #FDFBF8;
+  --color-te-border: #E3DDD4;
+  --color-te-text: #1C1917;
+  --color-te-muted: #78716C;
+
+  --color-te-espresso: #2B1A10;
+  --color-te-espresso-hover: #3D2618;
+  --color-te-espresso-active: #4D3020;
+  --color-te-espresso-text: #F0E4DB;
+
+  --color-te-orange: #EA580C;
+  --color-te-orange-light: #FFF0E8;
+}
+
+@layer base {
+  body {
+    background-color: #F1EEE8;
+    color: #1C1917;
+    font-family: 'Outfit', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}

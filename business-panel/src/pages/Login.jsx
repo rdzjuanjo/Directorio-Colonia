@@ -1,9 +1,10 @@
+// Login.jsx — Pantalla de inicio de sesión del panel de negocio con flujo completo de recuperación de contraseña por WhatsApp
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 
 export default function Login() {
-  const [view, setView] = useState('login'); // 'login' | 'forgot' | 'reset'
+  const [view, setView] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
@@ -17,11 +18,15 @@ export default function Login() {
   async function handleLogin(e) {
     e.preventDefault();
     setError('');
-    const res = await api.login(email, password);
-    if (res.token) {
-      localStorage.setItem('biz_token', res.token);
-      navigate('/orders');
-    } else {
+    try {
+      const res = await api.login(email, password);
+      if (res.token) {
+        localStorage.setItem('biz_token', res.token);
+        navigate('/orders');
+      } else {
+        setError('Credenciales inválidas');
+      }
+    } catch {
       setError('Credenciales inválidas');
     }
   }
@@ -56,60 +61,145 @@ export default function Login() {
     }
   }
 
-  function goBack() {
-    setError('');
-    setInfo('');
-    setView('login');
-  }
+  function goBack() { setError(''); setInfo(''); setView('login'); }
 
-  const cardClass = 'bg-white rounded-xl shadow-lg p-8 w-full max-w-sm space-y-4';
-  const inputClass = 'w-full border rounded px-3 py-2';
-  const btnClass = 'w-full bg-orange-600 text-white rounded py-2 font-semibold hover:bg-orange-500 disabled:opacity-50';
+  const inputStyle = {
+    background: '#FDFBF8',
+    border: '1px solid #E3DDD4',
+    color: '#1C1917',
+    width: '100%',
+    padding: '10px 12px',
+    borderRadius: '8px',
+    fontSize: '14px',
+    outline: 'none',
+  };
+
+  const btnStyle = {
+    background: '#2B1A10',
+    color: '#fff',
+    width: '100%',
+    padding: '10px 0',
+    borderRadius: '8px',
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    border: 'none',
+  };
+
+  const accentBtnStyle = {
+    ...btnStyle,
+    background: '#EA580C',
+  };
+
+  function Shell({ title, subtitle, onSubmit, children }) {
+    return (
+      <div className="min-h-screen flex" style={{ background: '#F1EEE8' }}>
+        <div className="hidden lg:flex w-72 flex-col justify-between p-10" style={{ background: '#2B1A10' }}>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded flex items-center justify-center text-sm font-bold"
+              style={{ background: '#EA580C', color: '#fff' }}>
+              TE
+            </div>
+            <div>
+              <div className="text-xs font-semibold tracking-widest" style={{ color: '#F0E4DB', letterSpacing: '0.12em' }}>MI NEGOCIO</div>
+              <div className="text-[10px]" style={{ color: '#9C6E5C', letterSpacing: '0.1em' }}>TIENDA ESQUINA</div>
+            </div>
+          </div>
+          <p className="text-sm leading-relaxed" style={{ color: '#9C6E5C' }}>
+            Gestiona tus pedidos, actualiza tu menú y revisa tus analíticas desde aquí.
+          </p>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center p-6">
+          <div className="w-full max-w-sm">
+            <div className="flex items-center gap-2.5 mb-8 lg:hidden">
+              <div className="w-8 h-8 rounded flex items-center justify-center text-sm font-bold"
+                style={{ background: '#2B1A10', color: '#EA580C' }}>
+                TE
+              </div>
+              <span className="font-semibold text-sm" style={{ color: '#1C1917' }}>Mi Negocio</span>
+            </div>
+
+            <div className="mb-7">
+              <p className="text-[11px] font-semibold tracking-widest uppercase mb-1" style={{ color: '#78716C' }}>{subtitle}</p>
+              <h1 className="text-2xl font-semibold" style={{ color: '#1C1917' }}>{title}</h1>
+              <div className="mt-2 h-px" style={{ background: '#E3DDD4' }} />
+            </div>
+
+            <form onSubmit={onSubmit} className="space-y-4">
+              {children}
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (view === 'forgot') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-orange-50">
-        <form onSubmit={handleForgot} className={cardClass}>
-          <h1 className="text-2xl font-bold text-center text-orange-600">🏪 Recuperar contraseña</h1>
-          <p className="text-sm text-gray-500 text-center">Ingresa tu correo y te enviaremos un código por WhatsApp.</p>
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-          <input className={inputClass} type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          <button className={btnClass} disabled={loading}>{loading ? 'Enviando...' : 'Enviar código'}</button>
-          <button type="button" className="w-full text-sm text-gray-500 hover:underline" onClick={goBack}>Volver al inicio de sesión</button>
-        </form>
-      </div>
+      <Shell title="Recuperar acceso" subtitle="Contraseña" onSubmit={handleForgot}>
+        {error && <p className="text-sm px-3 py-2 rounded-lg" style={{ background: '#FEE2E2', color: '#B91C1C' }}>{error}</p>}
+        <p className="text-sm" style={{ color: '#78716C' }}>Ingresa tu correo y te enviaremos un código por WhatsApp.</p>
+        <input style={inputStyle} type="email" placeholder="tu@correo.com" value={email}
+          onFocus={e => e.target.style.borderColor = '#EA580C'}
+          onBlur={e => e.target.style.borderColor = '#E3DDD4'}
+          onChange={(e) => setEmail(e.target.value)} required />
+        <button style={accentBtnStyle} disabled={loading}>{loading ? 'Enviando...' : 'Enviar código'}</button>
+        <button type="button" className="w-full text-sm text-center hover:underline" style={{ color: '#78716C', background: 'none', border: 'none', cursor: 'pointer' }} onClick={goBack}>Volver al inicio de sesión</button>
+      </Shell>
     );
   }
 
   if (view === 'reset') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-orange-50">
-        <form onSubmit={handleReset} className={cardClass}>
-          <h1 className="text-2xl font-bold text-center text-orange-600">🏪 Nueva contraseña</h1>
-          {info && <p className="text-green-600 text-sm text-center">{info}</p>}
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-          <input className={inputClass} type="text" placeholder="Código de 6 dígitos" value={code} onChange={(e) => setCode(e.target.value)} maxLength={6} required />
-          <input className={inputClass} type="password" placeholder="Nueva contraseña" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} minLength={6} required />
-          <input className={inputClass} type="password" placeholder="Confirmar contraseña" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} minLength={6} required />
-          <button className={btnClass} disabled={loading}>{loading ? 'Guardando...' : 'Cambiar contraseña'}</button>
-          <button type="button" className="w-full text-sm text-gray-500 hover:underline" onClick={goBack}>Volver al inicio de sesión</button>
-        </form>
-      </div>
+      <Shell title="Nueva contraseña" subtitle="Restablecer" onSubmit={handleReset}>
+        {info && <p className="text-sm px-3 py-2 rounded-lg" style={{ background: '#D1FAE5', color: '#065F46' }}>{info}</p>}
+        {error && <p className="text-sm px-3 py-2 rounded-lg" style={{ background: '#FEE2E2', color: '#B91C1C' }}>{error}</p>}
+        <input style={inputStyle} type="text" placeholder="Código de 6 dígitos" value={code}
+          onFocus={e => e.target.style.borderColor = '#EA580C'}
+          onBlur={e => e.target.style.borderColor = '#E3DDD4'}
+          onChange={(e) => setCode(e.target.value)} maxLength={6} required />
+        <input style={inputStyle} type="password" placeholder="Nueva contraseña" value={newPassword}
+          onFocus={e => e.target.style.borderColor = '#EA580C'}
+          onBlur={e => e.target.style.borderColor = '#E3DDD4'}
+          onChange={(e) => setNewPassword(e.target.value)} minLength={6} required />
+        <input style={inputStyle} type="password" placeholder="Confirmar contraseña" value={confirmPassword}
+          onFocus={e => e.target.style.borderColor = '#EA580C'}
+          onBlur={e => e.target.style.borderColor = '#E3DDD4'}
+          onChange={(e) => setConfirmPassword(e.target.value)} minLength={6} required />
+        <button style={accentBtnStyle} disabled={loading}>{loading ? 'Guardando...' : 'Cambiar contraseña'}</button>
+        <button type="button" className="w-full text-sm text-center hover:underline" style={{ color: '#78716C', background: 'none', border: 'none', cursor: 'pointer' }} onClick={goBack}>Volver al inicio de sesión</button>
+      </Shell>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-orange-50">
-      <form onSubmit={handleLogin} className={cardClass}>
-        <h1 className="text-2xl font-bold text-center text-orange-600">🏪 Mi Negocio</h1>
-        {error && <p className={`text-sm text-center ${error.includes('actualizada') ? 'text-green-600' : 'text-red-500'}`}>{error}</p>}
-        <input className={inputClass} type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <input className={inputClass} type="password" placeholder="Contraseña" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        <button className={btnClass}>Ingresar</button>
-        <button type="button" className="w-full text-sm text-orange-500 hover:underline" onClick={() => { setError(''); setView('forgot'); }}>
-          ¿Olvidaste tu contraseña?
-        </button>
-      </form>
-    </div>
+    <Shell title="Iniciar sesión" subtitle="Acceso" onSubmit={handleLogin}>
+      {error && (
+        <p className="text-sm px-3 py-2 rounded-lg" style={{ background: error.includes('actualizada') ? '#D1FAE5' : '#FEE2E2', color: error.includes('actualizada') ? '#065F46' : '#B91C1C' }}>
+          {error}
+        </p>
+      )}
+      <div className="space-y-1">
+        <label className="text-xs font-medium uppercase tracking-wide" style={{ color: '#78716C', display: 'block' }}>Email</label>
+        <input style={inputStyle} type="email" placeholder="tu@negocio.com" value={email}
+          onFocus={e => e.target.style.borderColor = '#EA580C'}
+          onBlur={e => e.target.style.borderColor = '#E3DDD4'}
+          onChange={(e) => setEmail(e.target.value)} required />
+      </div>
+      <div className="space-y-1">
+        <label className="text-xs font-medium uppercase tracking-wide" style={{ color: '#78716C', display: 'block' }}>Contraseña</label>
+        <input style={inputStyle} type="password" placeholder="••••••••" value={password}
+          onFocus={e => e.target.style.borderColor = '#EA580C'}
+          onBlur={e => e.target.style.borderColor = '#E3DDD4'}
+          onChange={(e) => setPassword(e.target.value)} required />
+      </div>
+      <button style={accentBtnStyle}>Ingresar</button>
+      <button type="button" className="w-full text-sm text-center hover:underline"
+        style={{ color: '#EA580C', background: 'none', border: 'none', cursor: 'pointer' }}
+        onClick={() => { setError(''); setView('forgot'); }}>
+        ¿Olvidaste tu contraseña?
+      </button>
+    </Shell>
   );
 }
