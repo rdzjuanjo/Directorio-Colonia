@@ -4,7 +4,6 @@ const { handleUpdate } = require('../bot/fsm');
 const sessions = require('./sessions');
 const customersDb = require('../db/models/customers');
 const conversationsDb = require('../db/models/conversations');
-const { showCatalogMenu } = require('../bot/handlers/catalogSearch');
 
 let _msgId = 0;
 
@@ -449,15 +448,15 @@ async function webchatRoutes(fastify) {
       sessions.deleteIfMatch(chatId, emitter);
     });
 
-    // Usuario conocido: resetear conversación y mostrar menú fresco
+    // Usuario conocido: resetear conversación a estado limpio sin enviar nada
+    // El bot esperará a que el usuario escriba primero
     try {
       const customer = await customersDb.findByWhatsappId(chatId);
       if (customer) {
         await conversationsDb.set(chatId, 'catalog_search', [], {});
-        await showCatalogMenu(chatId, customer.name);
       }
     } catch (e) {
-      console.error('[webchat] greeting error on reconnect:', e.message);
+      console.error('[webchat] session reset error on reconnect:', e.message);
     }
   });
 
